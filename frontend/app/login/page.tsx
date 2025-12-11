@@ -50,7 +50,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-red-400 drop-shadow-[0_0_12px_rgba(255,0,0,0.45)]">
             天秤ゲーム
           </h1>
-          <p className="text-xs text-red-200/60 mt-1">
+          <p className="text-md text-red-200/60 mt-1">
             アカウントでログインしてください
           </p>
         </header>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 : "bg-red-600 hover:bg-red-500"
             }`}
           >
-            {isLoading ? "試練中..." : "ログイン"}
+            {isLoading ? "処理中..." : "ログイン"}
           </button>
         </form>
 
