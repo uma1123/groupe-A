@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
 
   // フォームの状態管理
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/mock/login", {
+      const res = await fetch("/api/mock/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -30,14 +30,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        console.log("Login success!:", data);
+        console.log("Signup success!:", data);
         router.push("/lobby");
       } else {
-        setError(data.message || "ログインに失敗しました。");
+        setError(data.message || "新規登録に失敗しました。");
       }
     } catch (error) {
-      setError("ログイン中にエラーが発生しました。");
-      console.error("Login error:", error);
+      setError("新規登録中にエラーが発生しました。");
+      console.error("Signup error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,9 +50,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-red-400 drop-shadow-[0_0_12px_rgba(255,0,0,0.45)]">
             天秤ゲーム
           </h1>
-          <p className="text-md text-red-200/60 mt-1">
-            アカウントでログインしてください
-          </p>
+          <p className="text-md text-red-200/60 mt-1">新規登録してください</p>
         </header>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -107,14 +105,14 @@ export default function LoginPage() {
                 : "bg-red-600 hover:bg-red-500"
             }`}
           >
-            {isLoading ? "処理中..." : "ログイン"}
+            {isLoading ? "処理中..." : "新規登録"}
           </button>
         </form>
 
         <footer className="mt-6 text-center text-sm text-slate-400">
-          アカウントがない場合
-          <Link href="/signup" className="text-red-400 hover:underline ml-2">
-            新規登録
+          アカウントがある場合
+          <Link href="/login" className="text-red-400 hover:underline ml-2">
+            ログイン
           </Link>
         </footer>
       </div>
