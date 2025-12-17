@@ -21,4 +21,7 @@ public class CollectionOfRandRules {
     public ArrayList<RandRule> getRandRuleList(){
         return this.randRuleList;
     }
+    public int getRuleCount(){
+        return this.ruleCount;
+    }
 }
