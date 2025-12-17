@@ -2,14 +2,14 @@ package ApplicationServer;
 
 public class Rule {
     CollectionOfRandRules ruleList;
-    private String randRuleId;
+    private String currentRuleId;
 
     public Rule(){
         this.ruleList=new CollectionOfRandRules();
-        this.randRuleId=null;
+        this.currentRuleId=null;
     }
 
     public String getRandRuleId() {
-        return randRuleId;
+        return currentRuleId;
     }
 }
