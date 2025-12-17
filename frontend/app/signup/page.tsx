@@ -1,11 +1,13 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function SignupPage() {
   const router = useRouter();
+  const auth = useAuth();
 
   // フォームの状態管理
   const [username, setUsername] = useState("");
@@ -30,7 +32,9 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        console.log("Signup success!:", data);
+        console.log("Signup API success, username:", username, "data:", data);
+        if (typeof window !== "undefined") sessionStorage.setItem("username", username);
+        auth.setUser(username);
         router.push("/lobby");
       } else {
         setError(data.message || "新規登録に失敗しました。");
