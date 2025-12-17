@@ -10,7 +10,7 @@ public class RandRule {
     String getRandRuleId(){
         return this.randRuleId;
     }
-    String getDetailRule(){
+    String getDetailRule() {
         return this.detailRule;
     }
 }
