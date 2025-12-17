@@ -1,11 +1,13 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
 
   // フォームの状態管理
   const [username, setUsername] = useState("");
@@ -30,7 +32,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        console.log("Login success!:", data);
+        console.log("API success, username:", username, "data:", data);
+        // 明示的に sessionStorage に書き込む（debug）
+        if (typeof window !== "undefined")
+          sessionStorage.setItem("username", username);
+        auth.setUser(username);
         router.push("/lobby");
       } else {
         setError(data.message || "ログインに失敗しました。");
