@@ -12,4 +12,7 @@ public class Rule {
     public String getRandRuleId() {
         return currentRuleId;
     }
+    public void setCurrentRuleId(String ruleId){
+        this.currentRuleId=ruleId;
+    }
 }
