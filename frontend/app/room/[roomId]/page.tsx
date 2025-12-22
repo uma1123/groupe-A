@@ -4,16 +4,7 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Users, Settings, Copy, ArrowLeft, Info, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
-// プレイヤーの型定義（後で共通型定義ファイルに移動推奨）
-type Player = {
-  id: string;
-  name: string;
-  isHost: boolean;
-  isReady: boolean;
-  life: number;
-  avatarColor: string;
-};
+import type { Player } from "@/types/room";
 
 export default function RoomPage() {
   const { user } = useAuth();
@@ -287,7 +278,7 @@ export default function RoomPage() {
                           ライフ
                         </span>
                         <span className="font-mono text-xl text-red-500 font-bold">
-                          {player.life}
+                          {initialLife}
                         </span>
                       </div>
                     </div>
