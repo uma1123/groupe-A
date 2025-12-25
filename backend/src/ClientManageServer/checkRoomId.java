@@ -4,7 +4,9 @@ package ClientManageServer;
 import java.util.List;
 
 public String checkRoomId(int inputRoomId) {
-    List<Room> roomList = addRoom.getRoomList();
+
+    addRoom roomList = new addRoom;
+     List<Room> roomList = RoomList.getRoomList();
 
     for (Room room : roomList) {
         // RoomオブジェクトからIDだけを取り出して比較
