@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       message: "新規登録に成功しました。",
       token: "mock-jwt-token-new-user", // 仮のトークン
       user: {
-        id: Math.floor(Math.random() * 1000), // 仮のランダムなIDを生成
+        id: "u002", // 仮のランダムなIDを生成
         username: username,
       },
     },
