@@ -4,56 +4,22 @@ import { ArrowRight, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import RuleModal from "../components/RuleModal";
+import { useLobbyController } from "@/hooks/useLobbyContoroller";
 
 export default function LobbyPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [isRuleOpen, setIsRuleOpen] = useState(false);
   const [roomIdInput, setRoomIdInput] = useState("");
 
+  const { createRoom, joinRoom } = useLobbyController();
+
   // ログアウト機能
   const handleLogout = () => {
     // 後で処理を書く（cookie削除など）
+    logout();
     router.push("/login");
-  };
-
-  // ゲーム作成処理
-  const handleCreateGame = async() => {
-    try {
-      const res = await fetch('api/mock/room/create', {
-        method: 'POST'
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        router.push(`room/${data.roomId}`);
-      }
-    } catch (error) {
-      console.error("作成失敗:", error);
-    }
-  };
-
-  // ゲーム参加処理
-  const handleJoinGame = async(inputroomId: number) => {
-    try {
-      const res = await fetch('api/mock/room/join', {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ roomId: inputroomId })
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        router.push(`room/${inputroomId}`);
-      } else {
-        alert(`参加失敗: ${data.message}`);
-      }
-    } catch (error) {
-      console.error("通信エラー:", error);
-    }
   };
 
   return (
@@ -157,7 +123,7 @@ export default function LobbyPage() {
               </div>
 
               <button
-                onClick={handleCreateGame}
+                onClick={() => createRoom()}
                 className="w-full group py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 text-lg"
               >
                 ゲーム作成
@@ -184,7 +150,10 @@ export default function LobbyPage() {
                   value={roomIdInput}
                   onChange={(e) => setRoomIdInput(e.target.value)}
                 />
-                <button className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded transition-all" onClick={() => handleJoinGame(Number(roomIdInput))}>
+                <button
+                  className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded transition-all"
+                  onClick={() => joinRoom(Number(roomIdInput))}
+                >
                   検索して参加
                 </button>
               </div>
