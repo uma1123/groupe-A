@@ -1,66 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Timer, Target, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Users, Timer, Target, User, RotateCcw } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import type { Player } from "@/types/game";
+import { DEFAULT_TARGET_VALUE, type Player } from "@/types/game";
 import { makeMockPlayers } from "@/lib/gameMockData";
 import { PlayerCard } from "@/app/components/PlayerCard";
 import { ResultOverlay } from "@/app/components/ResultOverlay";
+import { useGameController } from "@/hooks/useGameController";
 
 // --- 2. メインページコンポーネント ---
 export default function GamePage() {
-  const router = useRouter();
-  const [selectedNumber, setSelectedNumber] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [showResult, setShowResult] = useState(false);
-  const [gameResult, setGameResult] = useState<"WIN" | "LOSE" | null>(null);
-
-  // Contextからユーザー情報を取得
+  const params = useParams();
+  const roomId = (params?.roomId as string) || "";
   const { user } = useAuth();
-  const [players, setPlayers] = useState<Player[]>(
-    makeMockPlayers(user || "Player 1")
-  );
 
+  // ★Controllerを使用
+  const {
+    submitNumber,
+    nextRound,
+    exitGame,
+    resetGame,
+    isSubmitted, // 送信済みフラグ
+    waitingForOthers, // 他人待ちフラグ
+    showRoundResult, // 結果表示フラグ
+    showFinalResult,
+    gameResult, // 勝敗結果
+    currentRound,
+    totalRounds,
+    roundResults,
+    isLoading,
+    setGameResult, // デバッグ用
+  } = useGameController(roomId);
+
+  const [selectedNumber, setSelectedNumber] = useState("");
+  const [players] = useState<Player[]>(makeMockPlayers(user || "Player 1"));
   const alivePlayers = players.filter((p) => p.status === "alive").length;
-  const targetValue = 31.375;
 
   const handleSubmit = () => {
-    if (selectedNumber.trim()) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setShowResult(true);
-        // ゲーム終了判定をここに追加（例：ライフが0になったら）
-        // デモ用に勝利条件を設定
-        const userPlayer = players.find((p) => p.isYou);
-        if (userPlayer && userPlayer.lives <= 1) {
-          setTimeout(() => setGameResult("LOSE"), 1000);
-        }
-      }, 2000);
-    }
+    if (!selectedNumber) return;
+    // フックの関数を呼ぶ
+    submitNumber(Number(selectedNumber));
   };
 
-  const handleNextRound = () => {
-    setCurrentRound(currentRound + 1);
+  const handleContinueNextRound = () => {
     setSelectedNumber("");
-    setSubmitted(false);
-    setShowResult(false);
-
-    // デモ用：3ラウンド目で勝利
-    if (currentRound >= 3) {
-      setTimeout(() => setGameResult("WIN"), 500);
-    }
-  };
-
-  const handleExit = () => {
-    router.push("/lobby");
+    nextRound();
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-[#1a0000] to-black text-slate-200 overflow-hidden font-sans">
-      {gameResult && <ResultOverlay result={gameResult} onExit={handleExit} />}
+      {/* ファイナル結果表示 */}
+      {showFinalResult && gameResult && (
+        <ResultOverlay result={gameResult} onExit={exitGame} />
+      )}
+
+      {/* スキャン線エフェクト */}
       <div className="fixed inset-0 pointer-events-none z-50 opacity-10">
         <div
           className="h-full w-full"
@@ -70,6 +66,8 @@ export default function GamePage() {
           }}
         ></div>
       </div>
+
+      {/* グロー背景 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-red-900/10 rounded-full blur-3xl animate-pulse"></div>
         <div
@@ -95,7 +93,7 @@ export default function GamePage() {
                 <Timer className="w-4 h-4 text-red-500" />
                 <span className="text-slate-500">ラウンド</span>
                 <span className="text-red-500 font-bold font-mono text-lg">
-                  {currentRound}
+                  {currentRound}/{totalRounds}
                 </span>
               </div>
             </div>
@@ -115,6 +113,46 @@ export default function GamePage() {
 
       {/* Main Game Area */}
       <div className="relative max-w-7xl mx-auto px-6 py-8">
+        {/* ラウンド進捗表示 */}
+        <div className="mb-8 flex justify-center gap-2">
+          {Array.from({ length: totalRounds }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-all ${
+                i < currentRound
+                  ? "bg-green-900/30 border-green-500 text-green-400"
+                  : i === currentRound - 1
+                  ? "bg-red-900/30 border-red-500 text-red-400 animate-pulse"
+                  : "bg-slate-900/30 border-slate-700 text-slate-500"
+              }`}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+
+        {/* ラウンド結果履歴 */}
+        {roundResults.length > 0 && (
+          <div className="mb-8 flex justify-center gap-4">
+            {roundResults.map((result, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+                  result === "WIN"
+                    ? "bg-yellow-900/20 border-yellow-500/30 text-yellow-400"
+                    : "bg-red-900/20 border-red-500/30 text-red-400"
+                }`}
+              >
+                <span className="text-xs font-bold uppercase">
+                  ラウンド {i + 1}
+                </span>
+                <span className="text-sm font-bold">{result}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 目標値表示 */}
         <div className="mb-8 flex justify-center">
           <div className="relative inline-block">
             <div className="absolute inset-0 bg-red-500/10 blur-xl animate-pulse"></div>
@@ -132,7 +170,7 @@ export default function GamePage() {
                     </span>
                     <span className="text-sm text-slate-400">=</span>
                     <span className="text-4xl font-bold text-red-500 font-mono drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">
-                      {showResult ? targetValue : "?"}
+                      {showRoundResult ? DEFAULT_TARGET_VALUE : "?"}
                     </span>
                   </div>
                 </div>
@@ -163,8 +201,7 @@ export default function GamePage() {
                 </div>
               </div>
 
-              {/* 結果表示 */}
-              {showResult && (
+              {showRoundResult && (
                 <div className="mt-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -182,10 +219,26 @@ export default function GamePage() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">
-                      WIN
+                    <div
+                      className={`text-2xl font-bold uppercase tracking-widest drop-shadow-[0_0_5px_rgba(52,211,153,0.5)] ${
+                        gameResult === "WIN"
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {gameResult}
                     </div>
                   </div>
+
+                  {/* 次のラウンドへボタン */}
+                  <button
+                    onClick={handleContinueNextRound}
+                    className="w-full mt-4 bg-red-600 hover:bg-red-500 text-white font-bold uppercase tracking-wider py-3 rounded-md transition-all duration-200 shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:shadow-[0_0_25px_rgba(220,38,38,0.6)]"
+                  >
+                    {currentRound >= totalRounds
+                      ? "結果を見る"
+                      : "次のラウンドへ"}
+                  </button>
                 </div>
               )}
             </div>
@@ -194,7 +247,7 @@ export default function GamePage() {
           {/* 右側：入力パネル */}
           <div className="lg:col-span-1">
             <div className="bg-black/60 border border-red-500/30 rounded-lg p-6 sticky top-6 shadow-xl">
-              {!submitted ? (
+              {!isSubmitted ? (
                 <>
                   <h2 className="text-lg font-bold text-red-500 uppercase tracking-wider mb-4 border-b border-red-900/30 pb-2">
                     数値選択
@@ -222,11 +275,12 @@ export default function GamePage() {
                       disabled={
                         !selectedNumber ||
                         Number.parseInt(selectedNumber) < 0 ||
-                        Number.parseInt(selectedNumber) > 100
+                        Number.parseInt(selectedNumber) > 100 ||
+                        isLoading
                       }
                       className="w-full bg-red-600 hover:bg-red-500 text-white font-bold uppercase tracking-wider py-4 rounded-md transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(220,38,38,0.4)] hover:shadow-[0_0_25px_rgba(220,38,38,0.6)]"
                     >
-                      決定する
+                      {isLoading ? "送信中..." : "決定する"}
                     </button>
                   </div>
                 </>
@@ -243,7 +297,7 @@ export default function GamePage() {
                       ✓ 送信完了
                     </div>
                   </div>
-                  {!showResult ? (
+                  {waitingForOthers && (
                     <div className="bg-white/5 rounded-lg p-6 text-center border border-white/5">
                       <p className="text-xs text-slate-400 mb-4 tracking-wider">
                         他のプレイヤーを待機中...
@@ -260,46 +314,6 @@ export default function GamePage() {
                         ></div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-                      <div className="bg-black/40 border border-red-900/30 rounded-lg p-5">
-                        <h3 className="text-xs font-bold text-red-500 mb-4 uppercase tracking-widest border-b border-red-900/30 pb-2">
-                          ラウンド結果
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500 text-xs uppercase">
-                              平均値
-                            </span>
-                            <span className="text-slate-200 font-mono font-bold">
-                              39.219
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500 text-xs uppercase">
-                              倍率
-                            </span>
-                            <span className="text-slate-200 font-mono font-bold">
-                              × 0.8
-                            </span>
-                          </div>
-                          <div className="border-t border-red-900/30 pt-3 flex justify-between items-center">
-                            <span className="text-slate-400 text-xs uppercase font-bold">
-                              目標値
-                            </span>
-                            <span className="text-red-500 font-mono font-bold text-xl">
-                              {targetValue}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleNextRound}
-                        className="w-full bg-red-600 hover:bg-red-500 text-white font-bold uppercase tracking-wider py-4 rounded-md transition-all shadow-[0_0_15px_rgba(220,38,38,0.4)]"
-                      >
-                        次のラウンドへ
-                      </button>
-                    </div>
                   )}
                 </>
               )}
@@ -308,8 +322,8 @@ export default function GamePage() {
         </div>
       </div>
 
-      {/* デバッグボタン（開発用） */}
-      <div className="fixed bottom-4 right-4 z-40 flex gap-2">
+      {/* デバッグボタン */}
+      <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
         <button
           onClick={() => setGameResult("WIN")}
           className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded text-xs font-bold"
@@ -321,6 +335,13 @@ export default function GamePage() {
           className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-xs font-bold"
         >
           LOSE
+        </button>
+        <button
+          onClick={resetGame}
+          className="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
+        >
+          <RotateCcw size={14} />
+          Reset
         </button>
       </div>
     </div>

@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Users, Settings, Copy, ArrowLeft, Info, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import type { Player } from "@/types/room";
+import type { Player } from "@/types/game";
+import { useRoomController } from "@/hooks/useRoomController";
 
 export default function RoomPage() {
   const { user } = useAuth();
-  const router = useRouter();
+
   const params = useParams();
   const roomId = (params?.roomId as string) || "";
+  const { startGame, leaveRoom } = useRoomController();
 
   // ゲーム設定の状態
   const [maxPlayers, setMaxPlayers] = useState(9);
@@ -24,41 +26,36 @@ export default function RoomPage() {
       name: user || "Player 1",
       isHost: true,
       isReady: true,
-      life: 3,
+      lives: 3,
       avatarColor: "bg-red-900/80",
+      isYou: true,
+      choice: null,
     },
     {
       id: "p2",
       name: "Player 2",
       isHost: false,
       isReady: true,
-      life: 3,
+      lives: 3,
       avatarColor: "bg-slate-800",
+      isYou: false,
+      choice: null,
     },
     {
       id: "p3",
       name: "Player 3",
       isHost: false,
       isReady: true,
-      life: 3,
+      lives: 3,
       avatarColor: "bg-slate-800",
+      isYou: false,
+      choice: null,
     },
   ];
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(roomId);
     alert("ルームIDをコピーしました");
-  };
-
-  const handleLeave = () => {
-    // 退出処理（WebSocket切断など）
-    router.push("/lobby");
-  };
-
-  const handleStartGame = () => {
-    // ゲーム開始処理（サーバー通知など）
-    alert("ゲームを開始します！");
-    router.push(`/game/${roomId}`);
   };
 
   return (
@@ -81,7 +78,7 @@ export default function RoomPage() {
           </div>
 
           <button
-            onClick={handleLeave}
+            onClick={leaveRoom}
             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-400 border border-slate-800 rounded hover:text-white hover:border-slate-600 transition-colors bg-black"
           >
             <ArrowLeft size={16} />
@@ -306,7 +303,7 @@ export default function RoomPage() {
             {/* ゲーム開始ボタン */}
             <div>
               <button
-                onClick={handleStartGame}
+                onClick={() => startGame(roomId)}
                 disabled={players.length < 2}
                 className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition-colors"
               >
