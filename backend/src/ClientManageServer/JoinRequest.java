@@ -5,16 +5,15 @@ package ClientManageServer;
 public class JoinRequest {
     private int roomId;
     private String userId;
-    private int numOfPlayer;
-    private int numOfLife;
-
+    private int num;
+    private int life;
     // GetterとSetterが必要（SpringがJSONを流し込むため）
     public int getRoomId() { return roomId; }
     public void setRoomId(int roomId) { this.roomId = roomId; }
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
-    public int getNumOfPlayer() { return numOfPlayer; }
-    public void setNumOfPlayer(int numOfPlayer) { this.numOfPlayer = numOfPlayer; }
-    public int getNumOfLife() { return numOfLife; }
-    public void setNumOfLife(int numOfLife) { this.numOfLife = numOfLife; }
+    public int getNum() { return num; }
+    public void setNum(int num) { this.num = num; }
+    public int getLife() { return life; }
+    public void setLife(int life) { this.life = life; }
 }

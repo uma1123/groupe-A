@@ -4,10 +4,10 @@ package ClientManageServer;
 
     public void addRoom(int roomId, int numberOfPeople, int lives) {
         // 新しいRoomインスタンスを生成
-        Room newRoom = new Room(roomId, numberOfPeople, lives);
+        Room room = new Room(roomId, numberOfPeople, lives);
 
         // リストに追加
-        rooms.add(newRoom);
+        room.add(newRoom);
 
         System.out.println("ルームID: " + roomId + " を作成しました。");
     }
