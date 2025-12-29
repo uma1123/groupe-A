@@ -19,5 +19,5 @@ public class roomController {
     public String join (@RequestBody JoinRequest request) {
         return roomService.joinProcess(request);
     }
-    
+
 }
