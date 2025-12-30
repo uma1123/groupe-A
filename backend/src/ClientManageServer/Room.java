@@ -35,4 +35,18 @@ public class Room {
     {
         return roomPlayerList;
     }
+
+    public void setRoomId(int roomId)
+    {
+        this.roomId=roomId;
+    }
+
+    public void setNumOfPlayer(int num)
+    {
+        this.numOfPlayer=num;
+    }
+    public void setNumOfLife(int life)
+    {
+        this.numOfLife=life;
+    }
 }
