@@ -1,23 +1,14 @@
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  // 本来は、ユーザーIDなどをヘッダやbodyから受け取る
-  // const body = await req.json();
+export async function POST() {
+  await new Promise((resolve) => setTimeout(resolve, 600));
 
-  const roomId = Math.floor(1000 + Math.random() * 9000);
+  // ランダムな4桁の数値をルームIDとして生成
+  const randomRoomId = Math.floor(1000 + Math.random() * 9000).toString();
 
   return NextResponse.json({
     success: true,
-    roomId: roomId,
-    message: "ルームが作成されました",
-    // DBに保存するデータ構造
-    room: {
-      id: roomId,
-      userId: 1,
-      status: "waiting", // waiting, in_game, finished
-      maxPlayers: 9,
-      currentPlayers: 1,
-      createdAt: new Date().toISOString(),
-    },
+    roomId: randomRoomId, // 生成したIDを返す
+    message: "Room created successfully",
   });
 }

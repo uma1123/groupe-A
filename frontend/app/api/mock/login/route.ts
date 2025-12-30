@@ -19,7 +19,7 @@ export async function POST(req: Request) {
       success: true,
       token: "mock-jwt-token-12345",
       user: {
-        id: 1,
+        id: "u001",
         name: username,
       },
     });

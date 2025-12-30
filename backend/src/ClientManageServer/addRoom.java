@@ -9,7 +9,7 @@ package ClientManageServer;
         // リストに追加
         room.add(newRoom);
 
-        System.out.println("ルームID: " + roomId + " を作成しました。");
+        System.out.println("ルームID: " + roomId + " を作成");
     }
 
 
