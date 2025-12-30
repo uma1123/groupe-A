@@ -16,4 +16,23 @@ public class Room {
         this.numOfLife = numOfLife;
         this.roomPlayerList = new ArrayList<>();
     }
+
+    public int getRoomId()
+    {
+        return roomId;
+    }
+    public int getNumOfPlayer()
+    {
+        return numOfPlayer;
+    }
+
+    public int getCorrentPlayer()
+    {
+        return roomPlayerList.size();
+    }
+
+    public List getPlayerList()
+    {
+        return roomPlayerList;
+    }
 }
