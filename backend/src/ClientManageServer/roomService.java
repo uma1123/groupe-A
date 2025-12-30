@@ -17,6 +17,7 @@ public class roomService {
         return null;
     }
 
+
     public boolean isRoomFull(int roomId) {
         Room room = findRoom(roomId);
         if (room == null) return false;
