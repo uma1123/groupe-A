@@ -37,4 +37,13 @@ public class roomService {
         room.getPlayerList().add(request.getUserId());
         return "参加成功";
     }
+
+    public String setRule(JoinRequest request){
+        Room room = findRoom(request.getRoomId());
+
+        room.setNumOfPlayer(request.getNum());
+        room.setNumOfLife(request.getLife());
+
+        return "ルール設定完了";
+    }
 }

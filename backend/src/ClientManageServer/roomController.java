@@ -20,5 +20,7 @@ public class roomController {
         return roomService.joinProcess(request);
     }
 
-
+    @PostMapping ("/setRlue")
+    public String setRule (@RequestBody JoinRequest request) {return roomService.setRule(request);
+    }
 }
