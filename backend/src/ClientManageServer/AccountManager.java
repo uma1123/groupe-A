@@ -41,16 +41,23 @@ public class AccountManager {
     }
 
     boolean logout(String userId , String password) {
-        Iterator<User> it = userList.iterator();
+        String sql = "UPDATE users SET login_status = FALSE WHERE user_id = ?";
 
-        while (it.hasNext()) {
-            User u = it.next();
-            if (u.getUserId().equals(userId) && u.getPassword().equals(password)) {
-                it.remove();
-                return true; // ログアウト成功
-            }
+        try (
+                Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+                PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+
+            ps.setString(1, userId);
+
+            int rows = ps.executeUpdate();
+
+            return rows == 1;  // 1件更新できたら成功
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     boolean registrateNewAccount(String userId , String password) {
