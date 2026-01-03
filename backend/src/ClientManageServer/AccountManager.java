@@ -41,8 +41,16 @@ public class AccountManager {
     }
 
     boolean logout(String userId , String password) {
+        Iterator<User> it = userList.iterator();
 
-        return true;
+        while (it.hasNext()) {
+            User u = it.next();
+            if (u.getUserId().equals(userId) && u.getPassword().equals(password)) {
+                it.remove();
+                return true; // ログアウト成功
+            }
+        }
+        return false;
     }
 
     boolean registrateNewAccount(String userId , String password) {
