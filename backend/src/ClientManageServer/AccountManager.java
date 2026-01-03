@@ -1,4 +1,4 @@
-import ClientManageServer.User;
+package ClientManageServer;
 
 import java.sql.*;
 import java.util.*;
@@ -29,6 +29,8 @@ public class AccountManager {
             }
 
             String dbPassword = rs.getString("password");
+
+
 
             return password.equals(dbPassword);
 
