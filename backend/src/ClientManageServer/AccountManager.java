@@ -1,38 +1,43 @@
 package ClientManageServer;
 
 import java.sql.*;
-import java.util.*;
 
 public class AccountManager {
-    static final List<User> userList = new ArrayList<>();
+
     private static final String DB_URL  = "jdbc:mysql://localhost:3306/sample";
     private static final String DB_USER = "root";
     private static final String DB_PASS = "password";
 
+    // ログイン処理
     boolean login(String userId , String password) {
 
-
-        String sql = "SELECT password FROM users WHERE user_id = ?";
+        String selectSql = "SELECT password FROM users WHERE user_id = ?";
+        String updateSql = "UPDATE users SET login_status = TRUE WHERE user_id = ?";
 
         try (
-                Connection conn = DriverManager.getConnection(
-                        DB_URL, DB_USER, DB_PASS
-                );
-                PreparedStatement ps = conn.prepareStatement(sql)
+                Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+                PreparedStatement selectPs = conn.prepareStatement(selectSql);
+                PreparedStatement updatePs = conn.prepareStatement(updateSql)
         ) {
 
-            ps.setString(1, userId);
-            ResultSet rs = ps.executeQuery();
+            selectPs.setString(1, userId);
+            ResultSet rs = selectPs.executeQuery();
 
             if (!rs.next()) {
-                return false; // ユーザが存在しない
+                return false;   // ユーザが存在しない
             }
 
             String dbPassword = rs.getString("password");
 
+            if (!password.equals(dbPassword)) {
+                return false;   // パスワード不一致
+            }
 
+            // ログイン状態を true に更新
+            updatePs.setString(1, userId);
+            updatePs.executeUpdate();
 
-            return password.equals(dbPassword);
+            return true;
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -40,7 +45,9 @@ public class AccountManager {
         }
     }
 
-    boolean logout(String userId , String password) {
+    // ログアウト処理（login_status を false に）
+    boolean logout(String userId) {
+
         String sql = "UPDATE users SET login_status = FALSE WHERE user_id = ?";
 
         try (
@@ -60,10 +67,12 @@ public class AccountManager {
         }
     }
 
+    // アカウント登録
     boolean registrateNewAccount(String userId , String password) {
-    // すでに存在するかチェック
+
         String checkSql = "SELECT user_id FROM users WHERE user_id = ?";
-        String insertSql = "INSERT INTO users(user_id, password) VALUES(?, ?)";
+        String insertSql =
+                "INSERT INTO users(user_id, password, login_status) VALUES(?, ?, FALSE)";
 
         try (
                 Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
