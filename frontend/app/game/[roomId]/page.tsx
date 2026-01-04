@@ -4,8 +4,6 @@ import { useState } from "react";
 import { Users, Timer, Target, User, RotateCcw } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { DEFAULT_TARGET_VALUE, type Player } from "@/types/game";
-import { makeMockPlayers } from "@/lib/gameMockData";
 import { PlayerCard } from "@/app/components/PlayerCard";
 import { ResultOverlay } from "@/app/components/ResultOverlay";
 import { useGameController } from "@/hooks/useGameController";
@@ -32,10 +30,12 @@ export default function GamePage() {
     roundResults,
     isLoading,
     setGameResult, // デバッグ用
+    players,
+    targetValue,
   } = useGameController(roomId);
 
   const [selectedNumber, setSelectedNumber] = useState("");
-  const [players] = useState<Player[]>(makeMockPlayers(user || "Player 1"));
+  // const [players] = useState<Player[]>(makeMockPlayers(user || "Player 1"));
   const alivePlayers = players.filter((p) => p.status === "alive").length;
 
   const handleSubmit = () => {
@@ -170,7 +170,7 @@ export default function GamePage() {
                     </span>
                     <span className="text-sm text-slate-400">=</span>
                     <span className="text-4xl font-bold text-red-500 font-mono drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">
-                      {showRoundResult ? DEFAULT_TARGET_VALUE : "?"}
+                      {showRoundResult ? targetValue : "?"}
                     </span>
                   </div>
                 </div>
