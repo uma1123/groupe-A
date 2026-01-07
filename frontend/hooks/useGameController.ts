@@ -34,11 +34,17 @@ export const useGameController = (roomId: string) => {
 
   // ★ランダムルール
   const [currentRule, setCurrentRule] = useState<GameRule | null>(() => {
-    const initial = RULE_PRESETS.length === 1 ? RULE_PRESETS[0] : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
+    const initial =
+      RULE_PRESETS.length === 1
+        ? RULE_PRESETS[0]
+        : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
     return initial;
   });
   const [ruleHistory, setRuleHistory] = useState<GameRule[]>(() => {
-    const initial = RULE_PRESETS.length === 1 ? RULE_PRESETS[0] : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
+    const initial =
+      RULE_PRESETS.length === 1
+        ? RULE_PRESETS[0]
+        : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
     return [initial];
   });
 
@@ -131,23 +137,24 @@ export const useGameController = (roomId: string) => {
 
   // 次のラウンドへ
   const nextRound = useCallback(() => {
-    setShowRoundResult(false);
-    setGameResult(null);
-
     // 自分のライフが0なら、即ゲームオーバー画面へ
     const myPlayer = players.find((p) => p.isYou);
     if (myPlayer && myPlayer.lives <= 0) {
+      setShowRoundResult(false);
+      setGameResult("LOSE");
       setShowFinalResult(true);
       return;
     }
 
     if (currentRound >= TOTAL_ROUNDS) {
       // 最終ラウンド終了
-      setShowFinalResult(true);
-      // 最終結果判定（生き残っていれば勝ちとする）
+      setShowRoundResult(false);
       setGameResult("WIN");
+      setShowFinalResult(true);
     } else {
       // 継続
+      setShowRoundResult(false);
+      setGameResult(null);
       setCurrentRound((prev) => prev + 1);
       setIsSubmitted(false);
       // 次ラウンドのルール抽選
@@ -189,10 +196,16 @@ export const useGameController = (roomId: string) => {
     });
   }, [pickRandomRule]);
 
+  // ★追加: デバッグ用の結果表示関数
+  const showResult = useCallback((result: "WIN" | "LOSE") => {
+    setGameResult(result);
+    setShowFinalResult(true);
+  }, []);
+
   return {
     // データ
-    players, // ★追加
-    targetValue, // ★追加
+    players,
+    targetValue,
     currentRound,
     totalRounds: TOTAL_ROUNDS,
     roundResults,
@@ -213,7 +226,8 @@ export const useGameController = (roomId: string) => {
     nextRound,
     exitGame,
     resetGame,
-    setGameResult, // デバッグ用
-    shuffleRule, // デバッグ用
+    setGameResult,
+    shuffleRule,
+    showResult, // ★追加
   };
 };

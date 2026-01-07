@@ -20,20 +20,21 @@ export default function GamePage() {
     nextRound,
     exitGame,
     resetGame,
-    isSubmitted, // 送信済みフラグ
-    waitingForOthers, // 他人待ちフラグ
-    showRoundResult, // 結果表示フラグ
+    isSubmitted,
+    waitingForOthers,
+    showRoundResult,
     showFinalResult,
-    gameResult, // 勝敗結果
+    gameResult,
     currentRound,
     totalRounds,
     roundResults,
     isLoading,
-    setGameResult, // デバッグ用
+    setGameResult,
     players,
     targetValue,
-    currentRule, // ★追加
-    shuffleRule, // ★追加
+    currentRule,
+    shuffleRule,
+    showResult, // ★追加
   } = useGameController(roomId);
 
   const [selectedNumber, setSelectedNumber] = useState("");
@@ -349,13 +350,13 @@ export default function GamePage() {
       {/* デバッグボタン */}
       <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
         <button
-          onClick={() => setGameResult("WIN")}
+          onClick={() => showResult("WIN")}
           className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded text-xs font-bold"
         >
           WIN
         </button>
         <button
-          onClick={() => setGameResult("LOSE")}
+          onClick={() => showResult("LOSE")}
           className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-xs font-bold"
         >
           LOSE

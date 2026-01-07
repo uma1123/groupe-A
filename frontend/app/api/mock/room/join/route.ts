@@ -5,12 +5,16 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { roomId } = body;
+    const { type, userId, roomId } = body;
 
     // バリデーション
-    if (!roomId) {
+    if (
+      type !== "JOIN_ROOM" ||
+      typeof userId !== "string" ||
+      typeof roomId !== "string"
+    ) {
       return NextResponse.json(
-        { success: false, message: "ルームIDが必要です" },
+        { success: false, message: "不正なリクエスト形式です。" },
         { status: 400 }
       );
     }

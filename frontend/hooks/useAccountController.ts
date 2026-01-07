@@ -19,7 +19,7 @@ export const useAccountController = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ type: "LOGIN", userId: username, password }),
       });
       const data = await res.json();
 
@@ -50,7 +50,7 @@ export const useAccountController = () => {
       const res = await fetch("/api/mock/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ type: "REGISTER", userId: username, password }),
       });
       const data = await res.json();
 
