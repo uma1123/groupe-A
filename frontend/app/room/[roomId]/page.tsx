@@ -2,61 +2,83 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Users, Settings, Copy, ArrowLeft, Info, Crown } from "lucide-react";
+import {
+  Users,
+  Settings,
+  Copy,
+  ArrowLeft,
+  Info,
+  Crown,
+  Lock,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { Player } from "@/types/game";
 import { useRoomController } from "@/hooks/useRoomController";
+import { useRoomContext } from "@/context/RoomContext";
 
 export default function RoomPage() {
   const { user } = useAuth();
-
+  const { maxPlayers, initialLife } = useRoomContext();
   const params = useParams();
   const roomId = (params?.roomId as string) || "";
   const { startGame, leaveRoom } = useRoomController();
 
-  // ゲーム設定の状態
-  const [maxPlayers, setMaxPlayers] = useState(9);
-  const [initialLife, setInitialLife] = useState(3);
-  const [multiplier, setMultiplier] = useState(0.8);
+  const [isHydrated] = useState(true);
 
-  // プレイヤーリストのモックデータ
-  const players: Player[] = [
-    {
-      id: "p1",
-      name: user || "Player 1",
-      isHost: true,
-      isReady: true,
-      lives: 3,
-      avatarColor: "bg-red-900/80",
-      isYou: true,
-      choice: null,
-    },
-    {
-      id: "p2",
-      name: "Player 2",
-      isHost: false,
-      isReady: true,
-      lives: 3,
-      avatarColor: "bg-slate-800",
-      isYou: false,
-      choice: null,
-    },
-    {
-      id: "p3",
-      name: "Player 3",
-      isHost: false,
-      isReady: true,
-      lives: 3,
-      avatarColor: "bg-slate-800",
-      isYou: false,
-      choice: null,
-    },
-  ];
+  const isRuleLocked = true;
+
+  // プレイヤーリストのモックデータ（Hydration対策済み）
+  const players: Player[] = isHydrated
+    ? [
+        {
+          id: "p1",
+          name: user || "Player 1",
+          isHost: true,
+          isReady: true,
+          lives: initialLife,
+          avatarColor: "bg-red-900/80",
+          isYou: true,
+          choice: null,
+        },
+        {
+          id: "p2",
+          name: "Player 2",
+          isHost: false,
+          isReady: true,
+          lives: initialLife,
+          avatarColor: "bg-slate-800",
+          isYou: false,
+          choice: null,
+        },
+        {
+          id: "p3",
+          name: "Player 3",
+          isHost: false,
+          isReady: true,
+          lives: initialLife,
+          avatarColor: "bg-slate-800",
+          isYou: false,
+          choice: null,
+        },
+      ]
+    : [];
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(roomId);
     alert("ルームIDをコピーしました");
   };
+
+  // Hydration前はローディング画面を表示
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-black text-slate-100 font-sans flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">ルーム情報を読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-slate-100 font-sans selection:bg-red-900 selection:text-white pb-10">
@@ -77,13 +99,15 @@ export default function RoomPage() {
             </div>
           </div>
 
-          <button
-            onClick={leaveRoom}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-400 border border-slate-800 rounded hover:text-white hover:border-slate-600 transition-colors bg-black"
-          >
-            <ArrowLeft size={16} />
-            ロビーに戻る
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={leaveRoom}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-400 border border-slate-800 rounded hover:text-white hover:border-slate-600 transition-colors bg-black"
+            >
+              <ArrowLeft size={16} />
+              ロビーに戻る
+            </button>
+          </div>
         </div>
       </header>
 
@@ -111,74 +135,51 @@ export default function RoomPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* 左カラム：設定パネル (4/12) */}
           <div className="lg:col-span-4 space-y-6">
-            {/* ゲーム設定カード */}
+            {/* ゲーム設定カード（読取専用） */}
             <div className="bg-[#0a0a0a] border border-red-900/20 rounded-lg p-6 shadow-xl">
-              <div className="flex items-center gap-2 mb-6 text-red-500">
-                <Settings size={20} />
-                <h2 className="font-bold tracking-wider">ゲーム設定</h2>
+              <div className="flex items-center justify-between mb-6 text-red-500">
+                <div className="flex items-center gap-2">
+                  <Settings size={20} />
+                  <h2 className="font-bold tracking-wider">ゲーム設定</h2>
+                </div>
+                {isRuleLocked && (
+                  <span className="flex items-center gap-1 px-3 py-1 text-[11px] font-bold rounded border border-red-800 bg-red-900/20 text-red-300">
+                    <Lock size={12} />
+                    固定済み
+                  </span>
+                )}
               </div>
 
-              <div className="space-y-8">
-                {/* 最大プレイヤー数スライダー */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-400">最大プレイヤー数</span>
-                    <span className="text-red-500 text-lg">{maxPlayers}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="2"
-                    max="9"
-                    value={maxPlayers}
-                    onChange={(e) => setMaxPlayers(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-600"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-                    <span>2</span>
-                    <span>9</span>
-                  </div>
-                </div>
-
-                {/* 初期ライフスライダー */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-400">初期ライフ</span>
-                    <span className="text-red-500 text-lg">{initialLife}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={initialLife}
-                    onChange={(e) => setInitialLife(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-600"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-                    <span>1</span>
-                    <span>10</span>
-                  </div>
-                </div>
-
-                {/* 倍率スライダー */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-400">倍率</span>
-                    <span className="text-red-500 text-lg">
-                      {multiplier.toFixed(2)}
+              <div className="space-y-5">
+                <div className="rounded-lg border border-red-900/50 bg-red-900/10 p-4">
+                  <div className="flex items-center justify-between text-sm font-bold text-slate-200">
+                    <span className="flex items-center gap-2">
+                      <Users size={14} />
+                      最大プレイヤー数
+                    </span>
+                    <span className="text-red-400 text-xl font-black">
+                      {maxPlayers}
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="2.0"
-                    step="0.1"
-                    value={multiplier}
-                    onChange={(e) => setMultiplier(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-600"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 font-mono">
-                    <span>0.1</span>
-                    <span>2.0</span>
+                  <div className="mt-3 flex items-center gap-2 text-[12px] text-red-300/80">
+                    <Lock size={12} />
+                    設定済み（変更不可）
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-red-900/50 bg-red-900/10 p-4">
+                  <div className="flex items-center justify-between text-sm font-bold text-slate-200">
+                    <span className="flex items-center gap-2">
+                      <Users size={14} />
+                      初期ライフ
+                    </span>
+                    <span className="text-red-400 text-xl font-black">
+                      {initialLife}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-[12px] text-red-300/80">
+                    <Lock size={12} />
+                    設定済み（変更不可）
                   </div>
                 </div>
               </div>
@@ -225,7 +226,8 @@ export default function RoomPage() {
                 <div className="bg-slate-900 px-3 py-1 rounded border border-slate-800">
                   <span className="text-xs text-slate-400 mr-2">人数:</span>
                   <span className="text-red-500 font-bold font-mono text-lg">
-                    {players.length}
+                    {/* 動的プレイヤー数表示 */}
+                    {3}
                   </span>
                   <span className="text-slate-600 font-mono text-lg mx-1">
                     /
@@ -238,60 +240,106 @@ export default function RoomPage() {
 
               {/* プレイヤー一覧 */}
               <div className="p-6 space-y-3 flex-1 overflow-y-auto">
-                {/* 既存プレイヤーのレンダリング */}
-                {players.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center justify-between bg-slate-900/40 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* アバター円 */}
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-slate-300 border border-slate-700 ${player.avatarColor}`}
-                      >
-                        P{index + 1}
-                      </div>
-
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-200">
-                            {player.name}
-                          </span>
-                          {player.isHost && (
-                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-500 text-[10px] font-bold rounded border border-amber-500/30 flex items-center gap-1">
-                              <Crown size={10} /> HOST
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                          ▶ {player.isHost ? "ゲームマスター" : "参加者"}
-                        </span>
-                      </div>
+                {/* プレイヤー1 */}
+                <div className="flex items-center justify-between bg-slate-900/40 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-slate-300 border border-slate-700 bg-red-900/80">
+                      P1
                     </div>
-
-                    <div className="flex items-center gap-6 mr-6">
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-500 block">
-                          ライフ
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-200">
+                          {user || "Player 1"}
                         </span>
-                        <span className="font-mono text-xl text-red-500 font-bold">
-                          {initialLife}
+                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-500 text-[10px] font-bold rounded border border-amber-500/30 flex items-center gap-1">
+                          <Crown size={10} /> HOST
                         </span>
                       </div>
+                      <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        ▶ ゲームマスター
+                      </span>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center gap-6 mr-6">
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 block">
+                        ライフ
+                      </span>
+                      <span className="font-mono text-xl text-red-500 font-bold">
+                        {initialLife}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                {/* 空きスロットのレンダリング */}
+                {/* プレイヤー2 */}
+                <div className="flex items-center justify-between bg-slate-900/40 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-slate-300 border border-slate-700 bg-slate-800">
+                      P2
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-200">
+                          Player 2
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        ▶ 参加者
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 mr-6">
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 block">
+                        ライフ
+                      </span>
+                      <span className="font-mono text-xl text-red-500 font-bold">
+                        {initialLife}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* プレイヤー3 */}
+                <div className="flex items-center justify-between bg-slate-900/40 border border-slate-800 rounded-lg p-4 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-slate-300 border border-slate-700 bg-slate-800">
+                      P3
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-200">
+                          Player 3
+                        </span>
+                      </div>
+                      <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        ▶ 参加者
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 mr-6">
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 block">
+                        ライフ
+                      </span>
+                      <span className="font-mono text-xl text-red-500 font-bold">
+                        {initialLife}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 空きスロット */}
                 {Array.from({
-                  length: Math.max(0, maxPlayers - players.length),
+                  length: Math.max(0, maxPlayers - 3),
                 }).map((_, i) => (
                   <div
                     key={`empty-${i}`}
                     className="flex items-center gap-4 bg-slate-900/20 border border-slate-800/50 border-dashed rounded-lg p-4 opacity-50"
                   >
                     <div className="w-12 h-12 rounded-full bg-slate-900/50 border border-slate-800 flex items-center justify-center text-slate-700 font-mono text-sm">
-                      P{players.length + i + 1}
+                      P{4 + i}
                     </div>
                     <span className="text-slate-600 text-sm tracking-widest">
                       待機中 ...
@@ -304,12 +352,10 @@ export default function RoomPage() {
             <div>
               <button
                 onClick={() => startGame(roomId)}
-                disabled={players.length < 2}
-                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition-colors"
+                disabled={false}
+                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition-colors disabled:opacity-50"
               >
-                {players.length < 2
-                  ? "参加者が不足しています…"
-                  : "ゲームを開始  ▶"}
+                ゲームを開始 ▶
               </button>
             </div>
           </div>

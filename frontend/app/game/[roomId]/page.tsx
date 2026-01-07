@@ -33,7 +33,6 @@ export default function GamePage() {
     players,
     targetValue,
     currentRule, // ★追加
-    ruleHistory, // ★追加
     shuffleRule, // ★追加
   } = useGameController(roomId);
 
@@ -116,24 +115,6 @@ export default function GamePage() {
 
       {/* Main Game Area */}
       <div className="relative max-w-7xl mx-auto px-6 py-8">
-        {/* ラウンド進捗表示 */}
-        <div className="mb-8 flex justify-center gap-2">
-          {Array.from({ length: totalRounds }).map((_, i) => (
-            <div
-              key={i}
-              className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-all ${
-                i < currentRound
-                  ? "bg-green-900/30 border-green-500 text-green-400"
-                  : i === currentRound - 1
-                  ? "bg-red-900/30 border-red-500 text-red-400 animate-pulse"
-                  : "bg-slate-900/30 border-slate-700 text-slate-500"
-              }`}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-
         {/* ランダムルール表示パネル */}
         <div className="mb-8 flex justify-center">
           <div className="relative w-full lg:w-[900px]">
