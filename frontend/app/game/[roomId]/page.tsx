@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Timer, Target, User, RotateCcw } from "lucide-react";
+import { Users, Timer, Target, User, RotateCcw, Shuffle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { PlayerCard } from "@/app/components/PlayerCard";
@@ -32,6 +32,9 @@ export default function GamePage() {
     setGameResult, // デバッグ用
     players,
     targetValue,
+    currentRule, // ★追加
+    ruleHistory, // ★追加
+    shuffleRule, // ★追加
   } = useGameController(roomId);
 
   const [selectedNumber, setSelectedNumber] = useState("");
@@ -131,6 +134,41 @@ export default function GamePage() {
           ))}
         </div>
 
+        {/* ランダムルール表示パネル */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full lg:w-[900px]">
+            <div className="absolute inset-0 bg-red-500/5 blur-xl"></div>
+            <div className="relative border border-red-500/30 bg-black/60 backdrop-blur-sm rounded-lg px-6 py-5">
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 mt-1">
+                  <div className="w-10 h-10 rounded-md bg-red-600/20 border border-red-500/30 flex items-center justify-center">
+                    <Shuffle className="w-5 h-5 text-red-400" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
+                      このラウンドのランダムルール
+                    </span>
+                    {currentRule && null}
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <h3 className="text-red-400 font-bold text-lg">
+                        {currentRule?.name ?? "ルール抽選中..."}
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        {currentRule?.description ??
+                          "次ラウンド開始時にルールが決定されます。"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ラウンド結果履歴 */}
         {roundResults.length > 0 && (
           <div className="mb-8 flex justify-center gap-4">
@@ -166,7 +204,7 @@ export default function GamePage() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm text-slate-400">平均値 ×</span>
                     <span className="text-2xl font-bold text-red-400 font-mono">
-                      0.8
+                      {currentRule?.multiplierLabel ?? "0.8"}
                     </span>
                     <span className="text-sm text-slate-400">=</span>
                     <span className="text-4xl font-bold text-red-500 font-mono drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">
@@ -253,7 +291,12 @@ export default function GamePage() {
                     数値選択
                   </h2>
                   <p className="text-slate-400 text-xs mb-6 leading-relaxed">
-                    0から100の間で数値を選択してください。全員の平均値に0.8を掛けた値に最も近い数値を選んだプレイヤーが勝利します。
+                    0から100の間で数値を選択してください。全員の平均値に
+                    <span className="text-red-400 font-bold">
+                      {" "}
+                      {currentRule?.multiplierLabel ?? "0.8"}{" "}
+                    </span>
+                    を掛けた値に最も近い数値を選んだプレイヤーが勝利します。
                   </p>
                   <div className="space-y-6">
                     <div>
@@ -342,6 +385,13 @@ export default function GamePage() {
         >
           <RotateCcw size={14} />
           Reset
+        </button>
+        <button
+          onClick={shuffleRule}
+          className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
+        >
+          <Shuffle size={14} />
+          Rule
         </button>
       </div>
     </div>
