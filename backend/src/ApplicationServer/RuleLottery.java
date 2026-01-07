@@ -8,7 +8,10 @@ public class RuleLottery {
     public RuleLottery(){
         this.currentRule=new Rule();
     }
-    String drawRandRule(){
+    String drawRandRule(int playerCount){//プレイヤーが2人のときは専用のルール
+        if(playerCount==2){
+            return "ONE_ON_ONE";
+        }
         /*ランダムルールの数のうちから乱数で数字を出力*/
         int index=new Random().nextInt(currentRule.ruleList.getRuleCount());
         /*ランダムルールリストを持ってくる*/
