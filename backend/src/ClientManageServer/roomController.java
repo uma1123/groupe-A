@@ -9,18 +9,19 @@ import org.springframework.web.bind.annotation.RestController;
 // Springの依存注入（Autowired用）
 import org.springframework.beans.factory.annotation.Autowired;
 @RestController
-@RequestMapping("/rooms") // 共通のURLの頭（/rooms/join など）
+@ServerEndpoint("/rooms") // 共通のURLの頭（/rooms/join など）
 public class roomController {
 
     @Autowired
     private roomService roomService; // 処理の担当者を呼ぶ
 
-    @PostMapping ("/join")
+    @ServerEndpoint("/join")
     public String join (@RequestBody JoinRequest request) {
         return roomService.joinProcess(request);
     }
 
-    @PostMapping ("/setRlue")
+    @ServerEndpoint("/setRlue")
     public String setRule (@RequestBody JoinRequest request) {return roomService.setRule(request);
     }
+    
 }
