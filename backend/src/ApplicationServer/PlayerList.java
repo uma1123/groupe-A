@@ -48,4 +48,9 @@ public class PlayerList {
         //指定されたuseridのプレイヤーが見つからなかった場合falseを返す
         return false;
     }
+
+    // プレイヤーリスト取得
+    public List<Player> getPlayerList() {
+        return this.playerlist;
+    }
 }
