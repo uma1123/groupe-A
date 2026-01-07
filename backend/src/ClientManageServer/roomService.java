@@ -1,10 +1,8 @@
 package ClientManageServer;
 
-import org.springframework.stereotype.Service; // ★必要！
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
 public class roomService {
 
     private List<Room> roomList = new ArrayList<>();
