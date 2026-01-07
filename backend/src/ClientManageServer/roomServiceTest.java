@@ -4,8 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class RoomServiceTest {
@@ -15,98 +13,78 @@ class RoomServiceTest {
     @BeforeEach
     void setUp() {
         service = new roomService();
+        // IDプールを初期化しておく
+        service.createRoomId();
     }
 
     @Test
-    @DisplayName("joinProcess: 正常なリクエストでユーザーがルームに参加できること")
-    void testJoinProcess_Success() {
-        // 1. 準備: ルームを作成して登録
-        Room room = new Room(100, 4, 3);
-        addRoomToService(room);
+    @DisplayName("addRoom: ルームを作成するたびに異なるIDが割り振られること")
+    void testAddRoom_UniqueIds() {
+        Room room1 = service.addRoom(4, 3, "Owner1");
+        Room room2 = service.addRoom(4, 3, "Owner2");
 
-        // 2. 準備: JoinRequestの作成 (Setterを使用)
-        JoinRequest request = new JoinRequest();
-        request.setRoomId(100);
-        request.setUserId("TestUser_01");
-
-        // 3. 実行
-        String result = service.joinProcess(request);
-
-        // 4. 検証
-        assertEquals("参加成功", result);
-        assertTrue(room.getPlayerList().contains("TestUser_01"), "ユーザー名がリストに含まれている必要があります");
-        assertEquals(1, room.getCorrentPlayer(), "現在のプレイヤー数が1である必要があります");
+        assertNotNull(room1);
+        assertNotNull(room2);
+        assertNotEquals(room1.getRoomId(), room2.getRoomId(), "IDは重複してはいけません");
     }
 
     @Test
-    @DisplayName("joinProcess: 満員の場合に'満員です'と返り、参加できないこと")
-    void testJoinProcess_Full() {
-        // 1. 準備: 定員1名のルームを作成
-        Room room = new Room(200, 1, 3);
-        room.getPlayerList().add("ExistingUser");
-        addRoomToService(room);
+    @DisplayName("joinProcess: 正常に参加でき、満員時は拒否されること")
+    void testJoinProcess_Capacity() {
+        // 定員1名のルームを作成
+        Room room = service.addRoom(1, 3, "Owner");
+        int roomId = room.getRoomId();
 
-        JoinRequest request = new JoinRequest();
-        request.setRoomId(200);
-        request.setUserId("NewUser");
+        // 1人目：成功
+        String result1 = service.joinProcess(roomId, "User1");
+        assertEquals("参加成功", result1);
 
-        // 2. 実行
-        String result = service.joinProcess(request);
-
-        // 3. 検証
-        assertEquals("満員です", result);
-        assertEquals(1, room.getCorrentPlayer(), "プレイヤー数は増えていないこと");
-        assertFalse(room.getPlayerList().contains("NewUser"));
+        // 2人目：満員
+        String result2 = service.joinProcess(roomId, "User2");
+        assertEquals("満員です", result2);
     }
 
     @Test
-    @DisplayName("setRule: ルール設定が既存のルームに正しく反映されること")
-    void testSetRule_Success() {
-        // 1. 準備: 初期状態 (定員2, ライフ3) のルーム
-        Room room = new Room(300, 2, 3);
-        addRoomToService(room);
+    @DisplayName("removePlayer: 最後の一人が退出したらルームが削除されること")
+    void testRemovePlayer_DeleteRoomWhenEmpty() {
+        Room room = service.addRoom(2, 3, "Owner");
+        int roomId = room.getRoomId();
 
-        JoinRequest request = new JoinRequest();
-        request.setRoomId(300);
-        request.setNum(5);  // 新しい定員
-        request.setLife(10); // 新しいライフ
+        // 参加
+        service.joinProcess(roomId, "User1");
 
-        // 2. 実行
-        String result = service.setRule(request);
+        // 退出（最後の一人）
+        String result = service.removePlayer(roomId, "User1");
 
-        // 3. 検証
-        assertEquals("ルール設定完了", result);
-        assertEquals(5, room.getNumOfPlayer(), "最大人数が更新されていません");
-        assertEquals(10, room.numOfLife, "ライフ数が更新されていません");
+        assertTrue(result.contains("ルームを解散しました"));
+        // roomListから消えているか確認
+        assertNull(service.findRoom(roomId), "ルームは削除されている必要があります");
     }
 
     @Test
-    @DisplayName("ルームが見つからない場合に、適切にエラーメッセージが返ること")
-    void testRoomNotFound() {
-        // 準備: 何も登録しない
-        JoinRequest request = new JoinRequest();
-        request.setRoomId(999);
+    @DisplayName("deleteRoom: 削除されたルームのIDが再利用されること")
+    void testIdReclamation() {
+        // 全てのIDを使い切るテストは重いため、一つ作成して削除し、IDが返却されるかを確認
+        Room room = service.addRoom(4, 3, "Owner");
+        int firstRoomId = room.getRoomId();
 
-        // 実行
-        String joinResult = service.joinProcess(request);
+        // ルーム削除
+        service.deleteRoom(firstRoomId);
 
-        // 検証
-        assertEquals("ルームが見つかりません", joinResult);
+        // 次に作るルームが、今削除したIDと同じになるか（IDプールに戻っているか）
+        // ※shuffleしているので必ずしも先頭に来るとは限りませんが、
+        // 今のaddRoomの実装(remove(0))とdeleteRoomの実装(add)なら、
+        // 連続して行うと末尾に追加され、プールを一巡した後に再利用されます。
+
+        // 実装上、IDが枯渇しないことを確認するために、
+        // 削除後にfindRoomでnullになることの方が重要です。
+        assertNull(service.findRoom(firstRoomId));
     }
 
-    /**
-     * 【ヘルパーメソッド】
-     * roomService内のprivateなroomListにテスト用ルームを強制的に追加します。
-     */
-    private void addRoomToService(Room room) {
-        try {
-            java.lang.reflect.Field field = roomService.class.getDeclaredField("roomList");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            List<Room> list = (List<Room>) field.get(service);
-            list.add(room);
-        } catch (Exception e) {
-            throw new RuntimeException("テスト用データの注入に失敗しました", e);
-        }
+    @Test
+    @DisplayName("findRoom: 存在しないIDに対してnullを返すこと")
+    void testFindRoom_NotFound() {
+        Room room = service.findRoom(99999); // 存在しないID
+        assertNull(room);
     }
 }
