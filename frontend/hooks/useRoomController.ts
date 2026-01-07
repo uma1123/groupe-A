@@ -7,6 +7,7 @@ export const useRoomController = () => {
   const [error, setError] = useState("");
 
   // ゲーム開始要求
+  // プレイヤー数、ライフ数、ターン数をサーバーに送信してゲームを開始する処理を追加する(1/7)
   const startGame = async (roomId: string) => {
     setIsLoading(true);
     setError("");
