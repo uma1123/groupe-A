@@ -1,8 +1,10 @@
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export const useLobbyController = () => {
   const router = useRouter();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,7 +18,14 @@ export const useLobbyController = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ maxPlayers, initialLife }),
+        body: JSON.stringify({
+          type: "CREATE_ROOM",
+          userId: user,
+          settings: {
+            maxPlayers,
+            lives: initialLife,
+          },
+        }),
       });
       const data = await res.json();
 
@@ -36,8 +45,8 @@ export const useLobbyController = () => {
   };
 
   // ルーム参加処理
-  const joinRoom = async (roomId: number) => {
-    if (!roomId || isNaN(roomId)) {
+  const joinRoom = async (roomId: string | number) => {
+    if (!roomId || (typeof roomId === "number" && isNaN(roomId))) {
       setError("有効なルームIDを入力してください。");
       return false;
     }
@@ -50,7 +59,11 @@ export const useLobbyController = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ roomId }),
+        body: JSON.stringify({
+          type: "JOIN_ROOM",
+          userId: user,
+          roomId: roomId.toString(),
+        }),
       });
       const data = await res.json();
 
@@ -69,5 +82,6 @@ export const useLobbyController = () => {
       setIsLoading(false);
     }
   };
+
   return { isLoading, error, createRoom, joinRoom };
 };
