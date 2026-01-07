@@ -10,11 +10,12 @@ public class Room {
     String roomOwner;
     List<String> roomPlayerList; // 本来はUserクラスですが、簡略化のためStringリストとしています
 
-    public Room(int roomId, int numOfPlayer, int numOfLife) {
+    public Room(int roomId, int numOfPlayer, int numOfLife, String roomOwner) {
         this.roomId = roomId;
         this.numOfPlayer = numOfPlayer;
         this.numOfLife = numOfLife;
         this.roomPlayerList = new ArrayList<>();
+        this.roomOwner= roomOwner;
     }
 
     public int getRoomId()
@@ -30,7 +31,8 @@ public class Room {
     {
         return roomPlayerList.size();
     }
-
+public String getRoomOwner()
+{return roomOwner;}
     public List getPlayerList()
     {
         return roomPlayerList;
