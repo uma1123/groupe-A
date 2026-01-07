@@ -23,17 +23,8 @@ public class PlayerList {
 
     //ライフ減算
     //ダメージは基本1であるが、ランダムルール追加に向けて拡張性を持たせるために実装
-    public boolean SubLife(String userID,int damage){
-        //引数で指定されたIDをプレイヤーリスト内で検索
-        for(Player p : this.playerlist){
-            if(p.userid.equals(userID)){
-                //発見したらライフ減算処理
-                p.life -=damage;
-                return true;
-            }
-        }
-        //指定されたuseridのプレイヤーが見つからなかった場合falseを返す
-        return false;
+    public void SubLife(Player player,int damage){
+        player.life -= damage;
     }
 
     //生存確認
