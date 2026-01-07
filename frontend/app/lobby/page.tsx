@@ -1,17 +1,21 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
+import { useRoomContext } from "@/context/RoomContext"; // 追加
 import { ArrowRight, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import RuleModal from "../components/RuleModal";
 import { useLobbyController } from "@/hooks/useLobbyContoroller";
+import SettingRuleModal from "../components/SettingRuleModal";
 
 export default function LobbyPage() {
   const { user, logout } = useAuth();
+  const { setRoomSettings } = useRoomContext(); // コンテキストから追加
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [isRuleOpen, setIsRuleOpen] = useState(false);
   const [roomIdInput, setRoomIdInput] = useState("");
+  const [showGameSettings, setShowGameSettings] = useState(false);
 
   const { createRoom, joinRoom } = useLobbyController();
 
@@ -20,6 +24,37 @@ export default function LobbyPage() {
     // 後で処理を書く（cookie削除など）
     logout();
     router.push("/login");
+  };
+
+  const handleCreateRoom = async () => {
+    setShowGameSettings(true);
+  };
+
+  // 設定確定時にコンテキストに保存
+  const handleConfirmSettings = async (
+    maxPlayers: number,
+    initialLife: number
+  ) => {
+    console.log("設定値:", { maxPlayers, initialLife });
+    setShowGameSettings(false);
+
+    // コンテキストに設定値を保存
+    setRoomSettings(maxPlayers, initialLife);
+
+    const result = await createRoom(maxPlayers, initialLife);
+
+    const roomId =
+      typeof result === "object" && result !== null && "roomId" in result
+        ? (result as { roomId: string | number }).roomId
+        : result;
+
+    if (typeof roomId === "string" || typeof roomId === "number") {
+      const url = `/room/${roomId}`;
+      console.log("遷移URL:", url);
+      router.push(url);
+    } else {
+      console.error("ルームIDの取得に失敗しました", result);
+    }
   };
 
   return (
@@ -123,7 +158,7 @@ export default function LobbyPage() {
               </div>
 
               <button
-                onClick={() => createRoom()}
+                onClick={handleCreateRoom}
                 className="w-full group py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 text-lg"
               >
                 ゲーム作成
@@ -161,6 +196,12 @@ export default function LobbyPage() {
           )}
         </div>
       </main>
+      {showGameSettings && (
+        <SettingRuleModal
+          onConfirmAction={handleConfirmSettings}
+          onCloseAction={() => setShowGameSettings(false)}
+        />
+      )}
       <RuleModal isOpen={isRuleOpen} onClose={() => setIsRuleOpen(false)} />
     </div>
   );
