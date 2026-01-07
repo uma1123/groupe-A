@@ -49,4 +49,7 @@ public class Room {
     {
         this.numOfLife=life;
     }
+
+    public boolean removePlayer(int userId)
+    {return reoomPlayerList.remove(userId);}
 }
