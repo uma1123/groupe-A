@@ -29,6 +29,8 @@ public class Room {
         return false;
     }
 
+
+
     // プレイヤーをルームから削除
     public boolean removePlayer(User user) {
         return roomPlayerList.remove(user);

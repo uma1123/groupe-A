@@ -3,6 +3,7 @@ package ClientManageServer;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * RoomList class - ルームリストを管理するクラス
  */
