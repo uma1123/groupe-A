@@ -1,8 +1,10 @@
 package ClientManageServer;
 
 import com.google.gson.Gson;
+
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
+
 
 import java.io.IOException;
 import java.util.Collections;
@@ -10,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @ServerEndpoint("/sample")
-public class EndpointSample {
+public class Endpoint {
     private static Set<Session> establishedSessions
             = Collections.synchronizedSet(new HashSet<Session>());
 
@@ -30,7 +32,7 @@ public class EndpointSample {
     public void onMessage(final String message, final Session session) throws IOException {
         System.out.println("[WebSocketServerSample] onMessage from (session: " + session.getId() + ") msg: " + message);
         this.privateIncrementTest++;
-        EndpointSample.staticIncrementTest++;
+        Endpoint.staticIncrementTest++;
 
         // 変換：String -> SampleMessage
         Message receivedMessage = gson.fromJson(message, Message.class);
@@ -43,7 +45,7 @@ public class EndpointSample {
         // 送信してきた人に返信
         //sendMessage(session, message);
         System.out.println("[WebSocketServerSample]:privateIncrementTest:" + this.privateIncrementTest);
-        System.out.println("[WebSocketServerSample]:staticInrementTest  :" + EndpointSample.staticIncrementTest);
+        System.out.println("[WebSocketServerSample]:staticInrementTest  :" + Endpoint.staticIncrementTest);
 
     }
 

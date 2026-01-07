@@ -1,6 +1,11 @@
 package ClientManageServer;
 
+import org.glassfish.tyrus.server.Server;
+
 public class ClientManageCom {
+    /* サーバ側のサンプルプログラム
+     * このメインメソッドの例ではサーバインスタンスの生成と起動のみを行っている．
+     */
 
     static String contextRoot = "/app";
     static String protocol = "ws";
@@ -8,7 +13,7 @@ public class ClientManageCom {
 
 
     public static void main(String[] args) throws Exception {
-        Server server = new Server(protocol, port, contextRoot, null, EndpointSample.class/*, EndpointExample.class*/);
+        Server server = new Server(protocol, port, contextRoot, null, Endpoint.class/*, EndpointExample.class*/);
         System.out.println("server: " + server);
 
         try {
@@ -19,5 +24,5 @@ public class ClientManageCom {
         }
     }
 
-    WebSocketServerSample() { }
+    ClientManageCom() { }
 }
