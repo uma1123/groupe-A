@@ -52,6 +52,4 @@ public String getRoomOwner()
         this.numOfLife=life;
     }
 
-    public boolean removePlayer(int userId)
-    {return reoomPlayerList.remove(userId);}
-}
+  }
