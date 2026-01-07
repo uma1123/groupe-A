@@ -7,18 +7,21 @@ export const useLobbyController = () => {
   const [error, setError] = useState("");
 
   // ルーム作成処理
-  const createRoom = async () => {
+  const createRoom = async (maxPlayers: number, initialLife: number) => {
     setIsLoading(true);
     setError("");
     try {
       const res = await fetch("/api/mock/room/create", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ maxPlayers, initialLife }),
       });
       const data = await res.json();
 
       if (res.ok && data.success) {
-        router.push(`/room/${data.roomId}`);
-        return true;
+        return data.roomId;
       } else {
         setError(data.message || "ルームの作成に失敗しました。");
         return false;
