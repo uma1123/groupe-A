@@ -40,7 +40,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("AuthProvider: setUser ->", u);
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    const currentUser =
+      user ??
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("username")
+        : null);
+
+    if (currentUser) {
+      fetch("/api/mock/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type: "LOGOUT", userId: currentUser }),
+      }).catch((e) => console.error("Logout error:", e));
+      setUser(null);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, setUser, logout }}>
