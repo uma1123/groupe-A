@@ -2,8 +2,10 @@
 
 import { User, Heart } from "lucide-react";
 import type { Player } from "@/types/game";
+import { useRoomContext } from "@/context/RoomContext";
 
 export const PlayerCard = ({ player }: { player: Player }) => {
+  const { initialLife } = useRoomContext();
   const baseStyle =
     "relative aspect-square rounded-lg border transition-all overflow-hidden";
   const statusStyles = {
@@ -44,7 +46,7 @@ export const PlayerCard = ({ player }: { player: Player }) => {
             </div>
             <div className="absolute bottom-2 left-0 right-0 z-10">
               <div className="flex gap-1 justify-center">
-                {Array.from({ length: 3 }).map((_, i) => (
+                {Array.from({ length: initialLife }).map((_, i) => (
                   <Heart
                     key={i}
                     className={`w-5 h-5 ${
