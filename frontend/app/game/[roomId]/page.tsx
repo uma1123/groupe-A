@@ -29,7 +29,6 @@ export default function GamePage() {
     totalRounds,
     roundResults,
     isLoading,
-    setGameResult,
     players,
     targetValue,
     currentRule,
@@ -231,11 +230,18 @@ export default function GamePage() {
                         className="rounded-full bg-gradient-to-b from-slate-700 to-slate-900"
                       />
                       <div>
-                        <p className="text-sm text-emerald-400 font-bold tracking-wider">
-                          {user || "Player 1"}
+                        <p className="text-sm text-emerald-400 font-bold tracking-wider mb-1">
+                          ラウンド勝者
+                        </p>
+                        <p className="text-lg text-white font-bold">
+                          {gameResult === "WIN"
+                            ? user || "Player 1"
+                            : players.find(
+                                (p) => p.status === "alive" && !p.isYou
+                              )?.name || "Player 2"}
                         </p>
                         <p className="text-xs text-slate-400">
-                          選択: {selectedNumber}
+                          目標値: {targetValue}
                         </p>
                       </div>
                     </div>
@@ -243,10 +249,10 @@ export default function GamePage() {
                       className={`text-2xl font-bold uppercase tracking-widest drop-shadow-[0_0_5px_rgba(52,211,153,0.5)] ${
                         gameResult === "WIN"
                           ? "text-yellow-400"
-                          : "text-red-400"
+                          : "text-slate-400"
                       }`}
                     >
-                      {gameResult}
+                      {gameResult === "WIN" ? "YOU WIN!" : "YOU LOST"}
                     </div>
                   </div>
 
