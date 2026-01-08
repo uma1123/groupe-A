@@ -4,12 +4,15 @@ import { Player, DEFAULT_TARGET_VALUE } from "@/types/game";
 import { makeMockPlayers } from "@/lib/gameMockData";
 import { useAuth } from "@/context/AuthContext";
 import { RULE_PRESETS, type GameRule } from "@/types/randomRule";
+import { useRoomContext } from "@/context/RoomContext";
 
 const TOTAL_ROUNDS = 3;
+const TIMER_DURATION = 60; // 60秒
 
 export const useGameController = (roomId: string) => {
   const router = useRouter();
-  const { user } = useAuth(); // ユーザー名取得のためにここでもAuthを使う
+  const { user } = useAuth();
+  const { maxPlayers, initialLife } = useRoomContext();
 
   // --- State ---
   const [isLoading, setIsLoading] = useState(false);
@@ -20,41 +23,74 @@ export const useGameController = (roomId: string) => {
   // 結果表示フラグ
   const [showRoundResult, setShowRoundResult] = useState(false);
   const [showFinalResult, setShowFinalResult] = useState(false);
-  const [gameResult, setGameResult] = useState<"WIN" | "LOSE" | null>(null); // ラウンドごとの勝敗
+  const [gameResult, setGameResult] = useState<"WIN" | "LOSE" | null>(null);
 
   // ゲームデータ
   const [currentRound, setCurrentRound] = useState(1);
   const [roundResults, setRoundResults] = useState<("WIN" | "LOSE")[]>([]);
   const [targetValue, setTargetValue] = useState(DEFAULT_TARGET_VALUE);
 
-  // ★プレイヤー状態
-  const [players, setPlayers] = useState<Player[]>(() =>
-    makeMockPlayers(user || "Player 1")
-  );
+  // ★タイマー関連
+  const [timeRemaining, setTimeRemaining] = useState(TIMER_DURATION);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [showRoundStart, setShowRoundStart] = useState(false);
 
-  // ★ランダムルール
-  const [currentRule, setCurrentRule] = useState<GameRule | null>(() => {
-    const initial =
-      RULE_PRESETS.length === 1
-        ? RULE_PRESETS[0]
-        : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
-    return initial;
-  });
-  const [ruleHistory, setRuleHistory] = useState<GameRule[]>(() => {
-    const initial =
-      RULE_PRESETS.length === 1
-        ? RULE_PRESETS[0]
-        : RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
-    return [initial];
-  });
+  // ★プレイヤー状態（SSRでは空、CSRで初期化）
+  const [players, setPlayers] = useState<Player[]>([]);
 
-  // タイマー管理用（アンマウント時のクリーンアップ）
+  // ★ランダムルール（SSRでは未決定、CSRで抽選）
+  const [currentRule, setCurrentRule] = useState<GameRule | null>(null);
+  const [ruleHistory, setRuleHistory] = useState<GameRule[]>([]);
+
+  // タイマー管理用
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  // 初回ラウンドの開始を一度だけ実行するためのフラグ
+  const hasStartedInitialRound = useRef(false);
+
+  // タイマーのクリーンアップ
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
     };
   }, []);
+
+  // タイマーカウントダウン
+  useEffect(() => {
+    if (isTimerRunning && timeRemaining > 0) {
+      countdownRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            // タイムアップ時の処理（自動送信）
+            if (!isSubmitted) {
+              submitNumber(0); // デフォルト値0を送信
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [isTimerRunning, timeRemaining, isSubmitted]);
+
+  // SSR/CSR差異を避けるため、クライアント側で初期化
+  useEffect(() => {
+    const base = makeMockPlayers(user || "Player 1");
+    // スロット数は mock の長さ（例: 9）に合わせ、maxPlayers を超える分は empty に
+    const adjusted = base.map((p, i) => {
+      if (i < maxPlayers) {
+        return { ...p, lives: initialLife, status: "alive" as const };
+      }
+      return { ...p, lives: 0, status: "empty" as const };
+    });
+    setPlayers(adjusted);
+  }, [user, maxPlayers, initialLife]);
 
   // 直前と同一ルールを避けてランダム選択
   const pickRandomRule = useCallback((prevId?: string): GameRule => {
@@ -66,12 +102,33 @@ export const useGameController = (roomId: string) => {
     return rule;
   }, []);
 
+  // 初期ルールはクライアント側で抽選（SSRとCSRの乱数差異対策）
+  useEffect(() => {
+    const initial = pickRandomRule();
+    setCurrentRule(initial);
+    setRuleHistory([initial]);
+  }, [pickRandomRule]);
+
+  // 初回ラウンド開始演出＋タイマー起動（初期ルール決定後に一度だけ）
+  useEffect(() => {
+    if (currentRule && !hasStartedInitialRound.current) {
+      hasStartedInitialRound.current = true;
+      setShowRoundStart(true);
+      setTimeRemaining(TIMER_DURATION);
+      setTimeout(() => {
+        setShowRoundStart(false);
+        setIsTimerRunning(true);
+      }, 1500);
+    }
+  }, [currentRule]);
+
   // --- Actions ---
 
   // 数値送信 (Mock Logic)
   const submitNumber = useCallback(
     async (number: number) => {
       setIsLoading(true);
+      setIsTimerRunning(false); // タイマー停止
       try {
         setIsSubmitted(true);
         setWaitingForOthers(true);
@@ -135,7 +192,7 @@ export const useGameController = (roomId: string) => {
     [currentRule]
   );
 
-  // 次のラウンドへ
+  // 次のラウンドへ（全員の準備完了を待機）
   const nextRound = useCallback(() => {
     // 自分のライフが0なら、即ゲームオーバー画面へ
     const myPlayer = players.find((p) => p.isYou);
@@ -152,17 +209,36 @@ export const useGameController = (roomId: string) => {
       setGameResult("WIN");
       setShowFinalResult(true);
     } else {
-      // 継続
-      setShowRoundResult(false);
-      setGameResult(null);
-      setCurrentRound((prev) => prev + 1);
-      setIsSubmitted(false);
-      // 次ラウンドのルール抽選
-      setCurrentRule((prev: GameRule | null): GameRule => {
-        const next = pickRandomRule(prev?.id);
-        setRuleHistory((h: GameRule[]): GameRule[] => [...h, next]);
-        return next;
-      });
+      // ★ここでサーバーに「NEXT_ROUND」メッセージを送信
+      // TODO: WebSocket実装時に実装
+      // socket.send(JSON.stringify({ type: "NEXT_ROUND", roomId }));
+
+      // ★Mock: 2秒後にラウンド開始（サーバーからの応答を待つ想定）
+      setWaitingForOthers(true);
+      timerRef.current = setTimeout(() => {
+        setWaitingForOthers(false);
+        setShowRoundResult(false);
+        setGameResult(null);
+        setCurrentRound((prev) => prev + 1);
+        setIsSubmitted(false);
+
+        // 次ラウンドのルール抽選
+        setCurrentRule((prev: GameRule | null): GameRule => {
+          const next = pickRandomRule(prev?.id);
+          setRuleHistory((h: GameRule[]): GameRule[] => [...h, next]);
+          return next;
+        });
+
+        // ★ラウンド開始演出とタイマー開始
+        setShowRoundStart(true);
+        setTimeRemaining(TIMER_DURATION);
+
+        // 1秒後に演出を消してタイマー開始
+        setTimeout(() => {
+          setShowRoundStart(false);
+          setIsTimerRunning(true);
+        }, 1500);
+      }, 2000);
     }
   }, [currentRound, players, pickRandomRule]);
 
@@ -179,13 +255,26 @@ export const useGameController = (roomId: string) => {
     setShowRoundResult(false);
     setShowFinalResult(false);
     setGameResult(null);
-    setPlayers(makeMockPlayers(user || "Player 1")); // プレイヤーもリセット
+
+    const base = makeMockPlayers(user || "Player 1");
+    const adjusted = base.map((p, i) => {
+      if (i < maxPlayers) {
+        return { ...p, lives: initialLife, status: "alive" as const };
+      }
+      return { ...p, lives: 0, status: "empty" as const };
+    });
+    setPlayers(adjusted);
+
     setTargetValue(DEFAULT_TARGET_VALUE);
+    setTimeRemaining(TIMER_DURATION);
+    setIsTimerRunning(false);
+    setShowRoundStart(false);
+
     // ルールも初期化
     const initial = pickRandomRule();
     setCurrentRule(initial);
     setRuleHistory([initial]);
-  }, [user, pickRandomRule]);
+  }, [user, pickRandomRule, maxPlayers, initialLife]);
 
   // デバッグ: 任意タイミングでルールを引き直す
   const shuffleRule = useCallback(() => {
@@ -196,10 +285,20 @@ export const useGameController = (roomId: string) => {
     });
   }, [pickRandomRule]);
 
-  // ★追加: デバッグ用の結果表示関数
+  // ★デバッグ用の結果表示関数
   const showResult = useCallback((result: "WIN" | "LOSE") => {
     setGameResult(result);
     setShowFinalResult(true);
+  }, []);
+
+  // ★デバッグ用: タイマー開始
+  const startTimer = useCallback(() => {
+    setShowRoundStart(true);
+    setTimeRemaining(TIMER_DURATION);
+    setTimeout(() => {
+      setShowRoundStart(false);
+      setIsTimerRunning(true);
+    }, 1500);
   }, []);
 
   return {
@@ -211,6 +310,9 @@ export const useGameController = (roomId: string) => {
     roundResults,
     currentRule,
     ruleHistory,
+    timeRemaining,
+    isTimerRunning,
+    showRoundStart,
 
     // 状態フラグ
     isLoading,
@@ -228,6 +330,7 @@ export const useGameController = (roomId: string) => {
     resetGame,
     setGameResult,
     shuffleRule,
-    showResult, // ★追加
+    showResult,
+    startTimer, // ★デバッグ用
   };
 };
