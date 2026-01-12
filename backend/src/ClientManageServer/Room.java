@@ -8,7 +8,7 @@ public class Room {
     int numOfPlayer; // 最大参加人数
     int numOfLife;   // ゲーム内のライフ設定
     String roomOwner;
-    List<String> roomPlayerList; // 本来はUserクラスですが、簡略化のためStringリストとしています
+    List<User> roomPlayerList; // 本来はUserクラスですが、簡略化のためStringリストとしています
 
     public Room(int roomId, int numOfPlayer, int numOfLife, String roomOwner) {
         this.roomId = roomId;
