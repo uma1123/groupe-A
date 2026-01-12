@@ -10,6 +10,7 @@ import {
   Info,
   Crown,
   Lock,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { Player } from "@/types/game";
@@ -24,6 +25,7 @@ export default function RoomPage() {
   const { startGame, leaveRoom } = useRoomController();
 
   const [isHydrated] = useState(true);
+  const [isCreatingGame, setIsCreatingGame] = useState(false);
 
   const isRuleLocked = true;
 
@@ -62,6 +64,9 @@ export default function RoomPage() {
         },
       ]
     : [];
+
+  // 自分がホストかどうかを判定
+  const isHost = players.find((p) => p.isYou)?.isHost || false;
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(roomId);
@@ -351,12 +356,46 @@ export default function RoomPage() {
             {/* ゲーム開始ボタン */}
             <div>
               <button
-                onClick={() => startGame(roomId)}
-                disabled={false}
-                className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                onClick={() => (startGame(roomId), setIsCreatingGame(true))}
+                disabled={!isHost}
+                className={`mt-4 w-full font-bold py-3 rounded-lg shadow-lg transition-colors ${
+                  isHost
+                    ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                    : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
+                }`}
               >
-                ゲームを開始 ▶
+                {isHost ? "ゲームを開始 ▶" : "ホストのみ開始可能"}
               </button>
+              {!isHost && (
+                <p className="mt-2 text-xs text-center text-slate-500">
+                  ホストがゲームを開始するまでお待ちください
+                </p>
+              )}
+              {isCreatingGame && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
+                  <div className="text-center space-y-6 animate-in fade-in duration-300">
+                    <div className="relative">
+                      <div className="w-20 h-20 mx-auto">
+                        <Loader2 className="w-full h-full text-red-500 animate-spin" />
+                      </div>
+                      <div className="absolute inset-0 w-20 h-20 mx-auto rounded-full bg-red-500/20 blur-xl animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-bold text-red-400 tracking-wider animate-pulse">
+                        ゲーム開始中
+                      </h3>
+                      <p className="text-sm text-slate-500 font-mono">
+                        &gt; しばらくお待ちください...
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
