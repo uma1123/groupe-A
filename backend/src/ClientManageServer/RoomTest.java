@@ -27,7 +27,7 @@ class RoomTest {
                 () -> assertEquals(INITIAL_ROOM_ID, room.getRoomId(), "RoomIDが一致しません"),
                 () -> assertEquals(MAX_PLAYERS, room.getNumOfPlayer(), "最大人数が一致しません"),
                 () -> assertEquals(OWNER_NAME, room.getRoomOwner(), "オーナー名が一致しません"),
-                () -> assertEquals(0, room.getCurrentPlayer(), "初期状態のプレイヤー数は0であるべきです"),
+                () -> assertEquals(0, room.getCorrentPlayer(), "初期状態のプレイヤー数は0であるべきです"),
                 () -> assertNotNull(room.getPlayerList(), "リストがnullになっています")
         );
     }

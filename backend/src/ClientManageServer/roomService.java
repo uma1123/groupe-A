@@ -57,7 +57,7 @@ public class roomService {
     public boolean isRoomFull(int roomId) {
         Room room = findRoom(roomId);
         if (room == null) return false;
-        return room.getCurrentPlayer() >= room.getNumOfPlayer();
+        return room.getCorrentPlayer() >= room.getNumOfPlayer();
     }
 
     //ルームに参加する
@@ -81,7 +81,7 @@ public class roomService {
         room.getPlayerList().remove(userId);
 
         // もしプレイヤーが誰もいなくなったらルームを削除する
-        if (room.getCurrentPlayer() == 0) {
+        if (room.getCorrentPlayer() == 0) {
             deleteRoom(room.getRoomId());
             return "退出しました（ルームを解散しました）";
         }

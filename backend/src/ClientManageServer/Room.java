@@ -27,7 +27,7 @@ public class Room {
         return numOfPlayer;
     }
 
-    public int getCurrentPlayer()
+    public int getCorrentPlayer()
     {
         return roomPlayerList.size();
     }
