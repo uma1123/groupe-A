@@ -122,8 +122,6 @@ export const useGameController = (roomId: string) => {
     }
   }, [currentRule]);
 
-  // --- Actions ---
-
   // 数値送信 (Mock Logic)
   const submitNumber = useCallback(
     async (number: number) => {
