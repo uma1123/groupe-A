@@ -24,8 +24,8 @@ export async function POST(req: Request) {
   }
 
   // 簡易的なロジックで認証を行う
-  // 例：Taku / password123 のみ成功とする（サンプルJSONに合わせる）
-  if (userId === "Taku" && password === "password123") {
+  // 例：admin / password のみ成功とする（実際のアプリではDB照合等を行う）
+  if (userId === "admin" && password === "password") {
     // 認証成功時のレスポンス
     return NextResponse.json({
       success: true,

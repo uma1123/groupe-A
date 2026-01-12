@@ -29,21 +29,22 @@ export default function GamePage() {
     totalRounds,
     roundResults,
     isLoading,
-    setGameResult,
     players,
     targetValue,
     currentRule,
     shuffleRule,
-    showResult, // ★追加
+    showResult,
+    timeRemaining, // ★追加
+    isTimerRunning, // ★追加
+    showRoundStart, // ★追加
+    startTimer, // ★デバッグ用
   } = useGameController(roomId);
 
   const [selectedNumber, setSelectedNumber] = useState("");
-  // const [players] = useState<Player[]>(makeMockPlayers(user || "Player 1"));
   const alivePlayers = players.filter((p) => p.status === "alive").length;
 
   const handleSubmit = () => {
     if (!selectedNumber) return;
-    // フックの関数を呼ぶ
     submitNumber(Number(selectedNumber));
   };
 
@@ -54,6 +55,20 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-[#1a0000] to-black text-slate-200 overflow-hidden font-sans">
+      {/* ラウンド開始演出 */}
+      {showRoundStart && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="text-center">
+            <h2 className="text-6xl font-bold text-red-500 mb-4 animate-pulse">
+              ラウンド {currentRound}
+            </h2>
+            <p className="text-2xl text-slate-300 uppercase tracking-widest">
+              開始
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ファイナル結果表示 */}
       {showFinalResult && gameResult && (
         <ResultOverlay result={gameResult} onExit={exitGame} />
@@ -101,6 +116,26 @@ export default function GamePage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* ★タイマー表示 */}
+              {isTimerRunning && (
+                <div className="flex items-center gap-2">
+                  <Timer
+                    className={`w-5 h-5 ${
+                      timeRemaining <= 10
+                        ? "text-red-500 animate-pulse"
+                        : "text-yellow-500"
+                    }`}
+                  />
+                  <span className="text-slate-500">残り時間</span>
+                  <span
+                    className={`font-bold font-mono text-2xl ${
+                      timeRemaining <= 10 ? "text-red-500" : "text-yellow-500"
+                    }`}
+                  >
+                    {timeRemaining}秒
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4 text-red-500" />
                 <span className="text-slate-500">生存者</span>
@@ -231,11 +266,18 @@ export default function GamePage() {
                         className="rounded-full bg-gradient-to-b from-slate-700 to-slate-900"
                       />
                       <div>
-                        <p className="text-sm text-emerald-400 font-bold tracking-wider">
-                          {user || "Player 1"}
+                        <p className="text-sm text-emerald-400 font-bold tracking-wider mb-1">
+                          ラウンド勝者
+                        </p>
+                        <p className="text-lg text-white font-bold">
+                          {gameResult === "WIN"
+                            ? user || "Player 1"
+                            : players.find(
+                                (p) => p.status === "alive" && !p.isYou
+                              )?.name || "Player 2"}
                         </p>
                         <p className="text-xs text-slate-400">
-                          選択: {selectedNumber}
+                          目標値: {targetValue}
                         </p>
                       </div>
                     </div>
@@ -243,10 +285,10 @@ export default function GamePage() {
                       className={`text-2xl font-bold uppercase tracking-widest drop-shadow-[0_0_5px_rgba(52,211,153,0.5)] ${
                         gameResult === "WIN"
                           ? "text-yellow-400"
-                          : "text-red-400"
+                          : "text-slate-400"
                       }`}
                     >
-                      {gameResult}
+                      {gameResult === "WIN" ? "YOU WIN!" : "YOU LOST"}
                     </div>
                   </div>
 
@@ -360,6 +402,13 @@ export default function GamePage() {
           className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-xs font-bold"
         >
           LOSE
+        </button>
+        <button
+          onClick={startTimer}
+          className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
+        >
+          <Timer size={14} />
+          Start
         </button>
         <button
           onClick={resetGame}

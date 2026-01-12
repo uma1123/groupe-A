@@ -82,6 +82,15 @@ export function makeMockPlayers(currentUserName: string): Player[] {
       isHost: false,
       isReady: true,
     },
-    { id: "9", name: "", lives: 0, status: "empty", isYou: false, choice: null, isHost: false, isReady: false },
+    {
+      id: "9",
+      name: "Player 9",
+      lives: 0,
+      status: "dead",
+      isYou: false,
+      choice: null,
+      isHost: false,
+      isReady: false,
+    },
   ];
 }
