@@ -188,11 +188,18 @@ export default function LobbyPage() {
                   value={roomIdInput}
                   onChange={(e) => setRoomIdInput(e.target.value)}
                 />
-                <button
-                  className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded transition-all"
+                {/* <button
+                  className="w-full py-4 bg-slate-800 hover:bg-slate-600 text-slate-200 border border-slate-700 font-bold rounded transition-all"
                   onClick={() => joinRoom(Number(roomIdInput))}
                 >
                   検索して参加
+                </button> */}
+                <button
+                  onClick={() => joinRoom(Number(roomIdInput))}
+                  className="w-full group py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 text-lg"
+                >
+                  ゲームに参加
+                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
