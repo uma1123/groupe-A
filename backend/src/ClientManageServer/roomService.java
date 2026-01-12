@@ -20,6 +20,8 @@ public class roomService {
         }
         Collections.shuffle(idPool);
     }
+
+
 //ルームを追加する
     public synchronized Room addRoom(int numOfPlayer, int numOfLife, String roomOwner) {
         if (idPool.isEmpty()) {
@@ -55,7 +57,7 @@ public class roomService {
     public boolean isRoomFull(int roomId) {
         Room room = findRoom(roomId);
         if (room == null) return false;
-        return room.getCorrentPlayer() >= room.getNumOfPlayer();
+        return room.getCurrentPlayer() >= room.getNumOfPlayer();
     }
 
     //ルームに参加する
@@ -79,7 +81,7 @@ public class roomService {
         room.getPlayerList().remove(userId);
 
         // もしプレイヤーが誰もいなくなったらルームを削除する
-        if (room.getCorrentPlayer() == 0) {
+        if (room.getCurrentPlayer() == 0) {
             deleteRoom(room.getRoomId());
             return "退出しました（ルームを解散しました）";
         }

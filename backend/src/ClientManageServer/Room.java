@@ -27,7 +27,7 @@ public class Room {
         return numOfPlayer;
     }
 
-    public int getCorrentPlayer()
+    public int getCurrentPlayer()
     {
         return roomPlayerList.size();
     }
@@ -43,13 +43,5 @@ public String getRoomOwner()
         this.roomId=roomId;
     }
 
-    public void setNumOfPlayer(int num)
-    {
-        this.numOfPlayer=num;
-    }
-    public void setNumOfLife(int life)
-    {
-        this.numOfLife=life;
-    }
 
   }
