@@ -19,4 +19,5 @@ public class Message {
     public String getUserId() { return id; }
     public int getNumOfPlayer() { return numOfPlayer; }
     public int getNumOfLife() { return numOfLife; }
+    public String getPassword(){return password;}
 }
