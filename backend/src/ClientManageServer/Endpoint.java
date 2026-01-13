@@ -13,6 +13,7 @@ import java.util.Set;
 
 @ServerEndpoint("/sample")
 public class Endpoint {
+    private static final GameManager gameManager = new GameManager();
     private static Set<Session> establishedSessions
             = Collections.synchronizedSet(new HashSet<Session>());
 
@@ -46,6 +47,11 @@ public class Endpoint {
         //sendMessage(session, message);
         System.out.println("[WebSocketServerSample]:privateIncrementTest:" + this.privateIncrementTest);
         System.out.println("[WebSocketServerSample]:staticInrementTest  :" + Endpoint.staticIncrementTest);
+
+        //ここでメソッドの呼び出しを行うクラスに属性を渡す
+            String result = gameManager.handleAction(receivedMessage);
+            sendMessage(session, result);
+        }
 
     }
 
