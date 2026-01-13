@@ -5,6 +5,8 @@ import jakarta.websocket.Session;
 public class GameManager {
     private roomService service = new roomService();
 
+    private AccountManager account = new AccountManager();
+
     public String handleAction(Message msg) {
         String action = msg.getAction();
 
@@ -19,6 +21,8 @@ public class GameManager {
 
             case "REMOVE":
                 return service.removePlayer(msg.getRoomId(), msg.getUserId());
+            case "REGI":
+                return account.login(msg.getUserId(), msg.getPassword());
 
             default:
                 return "Unknown action: " + action;
