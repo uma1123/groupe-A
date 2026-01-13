@@ -1,10 +1,7 @@
 package ClientManageServer;
 
-import jakarta.websocket.Session;
-
 public class GameManager {
     private roomService service = new roomService();
-
     private AccountManager account = new AccountManager();
 
     public String handleAction(Message msg) {
@@ -21,9 +18,15 @@ public class GameManager {
 
             case "REMOVE":
                 return service.removePlayer(msg.getRoomId(), msg.getUserId());
+            case "LOGIN":
+                if(account.login(msg.getUserId(), msg.getPassword()))
+                    return "ログイン成功";
+            case "LOGOUT":
+                if(account.logout(msg.getUserId()))
+                    return "ログアウト成功";
             case "REGI":
-                return account.login(msg.getUserId(), msg.getPassword());
-
+                if(account.registrateNewAccount(msg.getUserId(), msg.getPassword()))
+                    return "アカウントを登録しました";
             default:
                 return "Unknown action: " + action;
         }
