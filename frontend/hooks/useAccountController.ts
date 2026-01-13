@@ -30,7 +30,7 @@ export const useAccountController = () => {
         router.push("/lobby");
         return true;
       } else {
-        setError(data.message || "ログインに失敗しました。");
+        setError("ログインに失敗しました。");
         return false;
       }
     } catch (err) {
