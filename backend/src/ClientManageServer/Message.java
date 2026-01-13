@@ -17,6 +17,6 @@ public class Message {
     public String getAction() { return action; }
     public int getRoomId() { return roomId; }
     public String getUserId() { return id; }
-    public int getMaxPlayers() { return numOfPlayer; }
-    public int getLife() { return numOfLife; }
+    public int getNumOfPlayer() { return numOfPlayer; }
+    public int getNumOfLife() { return numOfLife; }
 }
