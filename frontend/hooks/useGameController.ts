@@ -45,6 +45,7 @@ export const useGameController = (roomId: string) => {
   // タイマー管理用
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const roundStartTimeoutRef = useRef<NodeJS.Timeout | null>(null); // ★追加
   // 初回ラウンドの開始を一度だけ実行するためのフラグ
   const hasStartedInitialRound = useRef(false);
 
@@ -53,6 +54,8 @@ export const useGameController = (roomId: string) => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
+      if (roundStartTimeoutRef.current)
+        clearTimeout(roundStartTimeoutRef.current); // ★追加
     };
   }, []);
 
@@ -77,7 +80,8 @@ export const useGameController = (roomId: string) => {
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [isTimerRunning, timeRemaining, isSubmitted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTimerRunning, isSubmitted]);
 
   // SSR/CSR差異を避けるため、クライアント側で初期化
   useEffect(() => {
@@ -98,8 +102,20 @@ export const useGameController = (roomId: string) => {
     let rule: GameRule;
     do {
       rule = RULE_PRESETS[Math.floor(Math.random() * RULE_PRESETS.length)];
-    } while (rule.id === prevId);
+    } while (prevId && rule.id === prevId && RULE_PRESETS.length > 1);
     return rule;
+  }, []);
+
+  // ラウンド開始演出＋タイマー開始を共通化
+  const beginRoundStart = useCallback(() => {
+    setShowRoundStart(true);
+    setTimeRemaining(TIMER_DURATION);
+    if (roundStartTimeoutRef.current)
+      clearTimeout(roundStartTimeoutRef.current);
+    roundStartTimeoutRef.current = setTimeout(() => {
+      setShowRoundStart(false);
+      setIsTimerRunning(true);
+    }, 1500);
   }, []);
 
   // 初期ルールはクライアント側で抽選（SSRとCSRの乱数差異対策）
@@ -107,20 +123,13 @@ export const useGameController = (roomId: string) => {
     const initial = pickRandomRule();
     setCurrentRule(initial);
     setRuleHistory([initial]);
-  }, [pickRandomRule]);
 
-  // 初回ラウンド開始演出＋タイマー起動（初期ルール決定後に一度だけ）
-  useEffect(() => {
-    if (currentRule && !hasStartedInitialRound.current) {
+    if (!hasStartedInitialRound.current) {
       hasStartedInitialRound.current = true;
-      setShowRoundStart(true);
-      setTimeRemaining(TIMER_DURATION);
-      setTimeout(() => {
-        setShowRoundStart(false);
-        setIsTimerRunning(true);
-      }, 1500);
+      beginRoundStart(); // ★共通関数に置き換え
     }
-  }, [currentRule]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 数値送信 (Mock Logic)
   const submitNumber = useCallback(
@@ -223,22 +232,15 @@ export const useGameController = (roomId: string) => {
         // 次ラウンドのルール抽選
         setCurrentRule((prev: GameRule | null): GameRule => {
           const next = pickRandomRule(prev?.id);
-          setRuleHistory((h: GameRule[]): GameRule[] => [...h, next]);
+          // 履歴の更新は外側で行う
           return next;
         });
 
         // ★ラウンド開始演出とタイマー開始
-        setShowRoundStart(true);
-        setTimeRemaining(TIMER_DURATION);
-
-        // 1秒後に演出を消してタイマー開始
-        setTimeout(() => {
-          setShowRoundStart(false);
-          setIsTimerRunning(true);
-        }, 1500);
+        beginRoundStart(); // ★共通関数で管理
       }, 2000);
     }
-  }, [currentRound, players, pickRandomRule]);
+  }, [currentRound, players, pickRandomRule, beginRoundStart]);
 
   const exitGame = useCallback(() => {
     router.push("/lobby");
@@ -277,9 +279,8 @@ export const useGameController = (roomId: string) => {
   // デバッグ: 任意タイミングでルールを引き直す
   const shuffleRule = useCallback(() => {
     setCurrentRule((prev: GameRule | null): GameRule => {
-      const next = pickRandomRule(prev?.id);
-      setRuleHistory((h: GameRule[]): GameRule[] => [...h, next]);
-      return next;
+      if (!prev) return RULE_PRESETS[0];
+      return pickRandomRule(prev.id);
     });
   }, [pickRandomRule]);
 
@@ -291,13 +292,8 @@ export const useGameController = (roomId: string) => {
 
   // ★デバッグ用: タイマー開始
   const startTimer = useCallback(() => {
-    setShowRoundStart(true);
-    setTimeRemaining(TIMER_DURATION);
-    setTimeout(() => {
-      setShowRoundStart(false);
-      setIsTimerRunning(true);
-    }, 1500);
-  }, []);
+    beginRoundStart(); // ★共通関数で管理
+  }, [beginRoundStart]);
 
   return {
     // データ
