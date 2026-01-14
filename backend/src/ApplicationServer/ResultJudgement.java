@@ -1,6 +1,8 @@
 package ApplicationServer;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class ResultJudgement {
@@ -96,7 +98,7 @@ public class ResultJudgement {
                 }
             }
             case "ONE_ON_ONE"->{//残っているプレイヤーが2人のとき
-                Player winner;//勝者を保存する
+                Player winner=null;//勝者を保存する
                 int flag_ratio;
                 /*残っているプレイヤーを取り出す*/
                 Player p1=pl.getPlayerList().get(0);
@@ -202,7 +204,7 @@ public class ResultJudgement {
         switch (ruleId){
             case "RULE_ODD"://奇数のみ
                 for(Player player:pl.getPlayerList()){
-                    if(player.selectednum%2 && player.selectednum<0 && player.selecteednum<=100){//奇数かつ範囲内の場合
+                    if(player.selectednum%2==1 && player.selectednum>0 && player.selectednum<=100){//奇数かつ範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -213,7 +215,7 @@ public class ResultJudgement {
                 break;
             case "RULE_EVEN"://偶数のみ
                 for(Player player:pl.getPlayerList()){
-                    if(!player.selectednum%2 && player.selectednum<0 && player.selecteednum<=100){//偶数かつ範囲内の場合
+                    if(player.selectednum%2==0 && player.selectednum>0 && player.selectednum<=100){//偶数かつ範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -224,7 +226,7 @@ public class ResultJudgement {
                 break;
             case "RULE_MULTIPLE_OF_3"://３の倍数のみ
                 for(Player player:pl.getPlayerList()){
-                    if(!player.selectednum%3 && player.selectednum<0 && player.selecteednum<=100){//3かつ範囲内の場合
+                    if(player.selectednum%3==0 && player.selectednum>0 && player.selectednum<=100){//3かつ範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -238,7 +240,7 @@ public class ResultJudgement {
                     /*素数かどうかの情報を持つフラグ*/
                     boolean isPrime=true;
                     /*2未満なら素数でない*/
-                    if(player.selectednum<2 || player.selecteednum>100){
+                    if(player.selectednum<2 || player.selectednum>100){
                         isPrime=false;
                     }
                     /*素数判定*/
@@ -259,7 +261,7 @@ public class ResultJudgement {
                 break;
             case "RULE_CLOSEST_AND_FARTHEST"://一番近い人と遠い人のみライフ削減
                 for(Player player:pl.getPlayerList()){
-                    if(player.selectednum>=0 && player.selecteednum<=100){//数字が範囲内の場合
+                    if(player.selectednum>=0 && player.selectednum<=100){//数字が範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -270,7 +272,7 @@ public class ResultJudgement {
                 break;
             case "RULE_LIFE_PLUS1_ON_JUST_RESULT"://ぴったりのときライフ+1
                 for(Player player:pl.getPlayerList()){
-                    if(player.selectednum>=0 && player.selecteednum<=100){//数字が範囲内の場合
+                    if(player.selectednum>=0 && player.selectednum<=100){//数字が範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -281,7 +283,7 @@ public class ResultJudgement {
                 break;
             case "ONE_ON_ONE"://プレイヤーが2人になった場合
                 for(Player player:pl.getPlayerList()){
-                    if(player.selectednum>=0 && player.selecteednum<=100){//数字が範囲内の場合
+                    if(player.selectednum>=0 && player.selectednum<=100){//数字が範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
@@ -292,7 +294,7 @@ public class ResultJudgement {
                 break;
             default:
                 for(Player player:pl.getPlayerList()){
-                    if(player.selectednum>=0 && player.selecteednum<=100){//数字が範囲内の場合
+                    if(player.selectednum>=0 && player.selectednum<=100){//数字が範囲内の場合
                         average+=player.selectednum;
                     }else{//数字が範囲外の場合
                         /*ルールに適しない数字は計算から削除*/
