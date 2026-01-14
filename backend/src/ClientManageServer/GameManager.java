@@ -4,7 +4,7 @@ public class GameManager {
     private roomService service = new roomService();
     private AccountManager account = new AccountManager();
 
-    public String handleAction(BaseMassage msg) {
+    public String handleAction(BaseMessage msg) {
         // 1. まずメッセージの種類(type)をチェック
         String type = msg.getType();
 

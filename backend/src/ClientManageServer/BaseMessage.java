@@ -1,9 +1,9 @@
 package ClientManageServer;
 
-public class BaseMassage {
+public class BaseMessage {
     protected String type;
 
-    public BaseMassage(String type) {
+    public BaseMessage(String type) {
         this.type = type;
     }
 
@@ -14,7 +14,7 @@ public class BaseMassage {
 
 // --- ログイン関連 ---
 
-class LoginMessage extends BaseMassage {
+class LoginMessage extends BaseMessage {
     private String userId;
     private String password;
 
@@ -28,7 +28,7 @@ class LoginMessage extends BaseMassage {
     public String getPassword() { return password; }
 }
 
-class LogoutMessage extends BaseMassage {
+class LogoutMessage extends BaseMessage {
     private String userId;
 
     public LogoutMessage(String userId) {
@@ -39,7 +39,7 @@ class LogoutMessage extends BaseMassage {
     public String getUserId() { return userId; }
 }
 
-class SignUpMessage extends BaseMassage {
+class SignUpMessage extends BaseMessage {
     private String userId;
     private String password;
 
@@ -55,7 +55,7 @@ class SignUpMessage extends BaseMassage {
 
 // --- ルーム関連 ---
 
-class CreateMessage extends BaseMassage {
+class CreateMessage extends BaseMessage {
     private String userId;
     private int numOfPlayer;
     private int numOfLife;
@@ -72,7 +72,7 @@ class CreateMessage extends BaseMassage {
     public int getNumOfLife() { return numOfLife; }
 }
 
-class JoinMessage extends BaseMassage {
+class JoinMessage extends BaseMessage {
     private int roomId;
     private String userId;
 
@@ -86,7 +86,7 @@ class JoinMessage extends BaseMassage {
     public String getUserId() { return userId; }
 }
 
-class RemoveMessage extends BaseMassage {
+class RemoveMessage extends BaseMessage {
     private int roomId;
     private String userId;
 
