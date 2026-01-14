@@ -20,6 +20,15 @@ public class PlayerList {
         return true;
     }
 
+    //投票結果受け取り
+    public void receiveVotingResult(String userId,int numData){
+        for(Player player:this.playerlist){
+            if(player.userid.equals(userId)){
+                player.setNumber(numData);
+            }
+        }
+    }
+
     //プレイヤー削除
     public boolean DeletePlayer(String userID) {
         return this.playerlist.removeIf(p->p.userid.equals(userID));
