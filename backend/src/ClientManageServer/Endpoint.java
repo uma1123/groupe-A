@@ -3,8 +3,9 @@ package ClientManageServer;
 import com.google.gson.Gson;
 
 import jakarta.websocket.*;
-import jakarta.websocket.server.ServerEndpoint;
 
+import jakarta.websocket.Session; // これに差し替える
+import jakarta.websocket.server.ServerEndpoint;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -90,6 +91,4 @@ public class Endpoint {
             e.printStackTrace();
         }
     }
-
-
 }
