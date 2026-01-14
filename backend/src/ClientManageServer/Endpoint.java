@@ -36,7 +36,7 @@ public class Endpoint {
         Endpoint.staticIncrementTest++;
 
         // 変換：String -> SampleMessage
-        Message receivedMessage = gson.fromJson(message, Message.class);
+        BaseMassage receivedMessage = gson.fromJson(message, Message.class);
         // 変換：SampleMessage -> String
         // receivedMessageはSampleMessageのインスタンスなので
         // receivedMessage.id などとして要素にアクセス可能。
