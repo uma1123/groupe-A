@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class RoundResultMessage {
+public class RoundResultMessage extends ApplicationEndpoint.BaseMessage{
     int roomid;
     String userid;
     Boolean roundresult;

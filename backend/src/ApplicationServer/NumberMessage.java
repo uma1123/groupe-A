@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class NumberMessage {
+public class NumberMessage extends ApplicationEndpoint.BaseMessage{
     int roomid;
     String userid;
     int num;

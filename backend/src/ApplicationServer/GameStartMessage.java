@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class GameStartMessage {
+public class GameStartMessage extends ApplicationEndpoint.BaseMessage {
     int roomid;
 
     public GameStartMessage(int roomid) {
