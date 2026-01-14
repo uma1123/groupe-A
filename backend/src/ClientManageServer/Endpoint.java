@@ -31,30 +31,44 @@ public class Endpoint {
 
     @OnMessage
     public void onMessage(final String message, final Session session) throws IOException {
-        System.out.println("[WebSocketServerSample] onMessage from (session: " + session.getId() + ") msg: " + message);
-        this.privateIncrementTest++;
-        Endpoint.staticIncrementTest++;
+        System.out.println("[WebSocketServerSample] 受信: " + message);
 
-        // 変換：String -> SampleMessage
-        Message receivedMessage = gson.fromJson(message, Message.class);
-        // 変換：SampleMessage -> String
-        // receivedMessageはSampleMessageのインスタンスなので
-        // receivedMessage.id などとして要素にアクセス可能。
-        System.out.println(gson.toJson(receivedMessage));
-        // 特定のグループに対しての送信（この例だと全体）
-        sendBroadcastMessage(message);
-        // 送信してきた人に返信
-        //sendMessage(session, message);
-        System.out.println("[WebSocketServerSample]:privateIncrementTest:" + this.privateIncrementTest);
-        System.out.println("[WebSocketServerSample]:staticInrementTest  :" + Endpoint.staticIncrementTest);
+        try {
+            // --- 手順1: まずは type だけ読み取る ---
+            BaseMessage temp = gson.fromJson(message, BaseMessage.class);
+            String type = temp.getType();
 
-        //ここでメソッドの呼び出しを行うクラスに属性を渡す
+            // --- 手順2: type に応じて、正しい子クラスとして読み直す ---
+            // これをしないと、userId や password などのデータが消えてしまいます
+            BaseMessage receivedMessage;
+            if ("LOGIN".equals(type)) {
+                receivedMessage = gson.fromJson(message, LoginMessage.class);
+            } else if ("JOIN_ROOM".equals(type)) {
+                receivedMessage = gson.fromJson(message, JoinMessage.class);
+            } else if ("CREATE_ROOM".equals(type)) {
+                receivedMessage = gson.fromJson(message, CreateMessage.class);
+            } else if ("LOGOUT".equals(type)) {
+                receivedMessage = gson.fromJson(message, LogoutMessage.class);
+            } else if ("SIGNUP".equals(type)) {
+                receivedMessage = gson.fromJson(message, SignUpMessage.class);
+            } else if ("REMOVE_ROOM".equals(type)) {
+                receivedMessage = gson.fromJson(message, RemoveMessage.class);
+            } else {
+                receivedMessage = temp; // 該当なし
+            }
+
+            // --- 手順3: GameManagerで処理 ---
             String result = gameManager.handleAction(receivedMessage);
+
+            // --- 手順4: 結果を送信者に返信 ---
+            // result が String ならそのまま、Object なら gson.toJson() を使う
             sendMessage(session, result);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            sendMessage(session, "サーバーでエラーが発生しました");
         }
-
     }
-
 
     @OnClose
     public void onClose(Session session) {
@@ -77,11 +91,5 @@ public class Endpoint {
         }
     }
 
-    public void sendBroadcastMessage(String message) {
-        System.out.println("[WebSocketServerSample] sendBroadcastMessage(): " + message);
-        establishedSessions.forEach(session -> {
-            // 非同期送信（async）
-            session.getAsyncRemote().sendText(message);
-        });
-    }
+
 }
