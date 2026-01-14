@@ -1,46 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { useAccountController } from "@/hooks/useAccountController";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login, isLoading, error } = useAccountController();
 
   // フォームの状態管理
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   // ログイン処理
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/mock/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        console.log("Login success!:", data);
-        router.push("/lobby");
-      } else {
-        setError(data.message || "ログインに失敗しました。");
-      }
-    } catch (error) {
-      setError("ログイン中にエラーが発生しました。");
-      console.error("Login error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    await login(username, password);
   };
 
   return (
