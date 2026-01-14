@@ -1,58 +1,62 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowRight, Info } from "lucide-react";
+import { useRoomContext } from "@/context/RoomContext"; // 追加
+import { ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import RuleModal from "../components/RuleModal";
+import { useLobbyController } from "@/hooks/useLobbyContoroller";
+import SettingRuleModal from "../components/SettingRuleModal";
 
 export default function LobbyPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { setRoomSettings } = useRoomContext(); // コンテキストから追加
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [isRuleOpen, setIsRuleOpen] = useState(false);
   const [roomIdInput, setRoomIdInput] = useState("");
+  const [showGameSettings, setShowGameSettings] = useState(false);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+
+  const { createRoom, joinRoom } = useLobbyController();
 
   // ログアウト機能
   const handleLogout = () => {
     // 後で処理を書く（cookie削除など）
+    logout();
     router.push("/login");
   };
 
-  // ゲーム作成処理
-  const handleCreateGame = async() => {
-    try {
-      const res = await fetch('api/mock/room/create', {
-        method: 'POST'
-      });
-      const data = await res.json();
-
-      if (data.success) {
-        router.push(`room/${data.roomId}`);
-      }
-    } catch (error) {
-      console.error("作成失敗:", error);
-    }
+  const handleCreateRoom = async () => {
+    setShowGameSettings(true);
   };
 
-  // ゲーム参加処理
-  const handleJoinGame = async(inputroomId: number) => {
-    try {
-      const res = await fetch('api/mock/room/join', {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ roomId: inputroomId })
-      });
-      const data = await res.json();
+  // 設定確定時にコンテキストに保存
+  const handleConfirmSettings = async (
+    maxPlayers: number,
+    initialLife: number
+  ) => {
+    console.log("設定値:", { maxPlayers, initialLife });
+    setShowGameSettings(false);
+    setIsCreatingRoom(true); // ローディング開始
 
-      if (data.success) {
-        router.push(`room/${inputroomId}`);
-      } else {
-        alert(`参加失敗: ${data.message}`);
-      }
-    } catch (error) {
-      console.error("通信エラー:", error);
+    // コンテキストに設定値を保存
+    setRoomSettings(maxPlayers, initialLife);
+
+    const result = await createRoom(maxPlayers, initialLife);
+
+    const roomId =
+      typeof result === "object" && result !== null && "roomId" in result
+        ? (result as { roomId: string | number }).roomId
+        : result;
+
+    if (typeof roomId === "string" || typeof roomId === "number") {
+      const url = `/room/${roomId}`;
+      console.log("遷移URL:", url);
+      router.push(url);
+    } else {
+      console.error("ルームIDの取得に失敗しました", result);
+      setIsCreatingRoom(false); // エラー時はローディング解除
     }
   };
 
@@ -157,7 +161,7 @@ export default function LobbyPage() {
               </div>
 
               <button
-                onClick={handleCreateGame}
+                onClick={handleCreateRoom}
                 className="w-full group py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 text-lg"
               >
                 ゲーム作成
@@ -184,14 +188,58 @@ export default function LobbyPage() {
                   value={roomIdInput}
                   onChange={(e) => setRoomIdInput(e.target.value)}
                 />
-                <button className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded transition-all" onClick={() => handleJoinGame(Number(roomIdInput))}>
+                {/* <button
+                  className="w-full py-4 bg-slate-800 hover:bg-slate-600 text-slate-200 border border-slate-700 font-bold rounded transition-all"
+                  onClick={() => joinRoom(Number(roomIdInput))}
+                >
                   検索して参加
+                </button> */}
+                <button
+                  onClick={() => joinRoom(Number(roomIdInput))}
+                  className="w-full group py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-all flex items-center justify-center gap-3 text-lg"
+                >
+                  ゲームに参加
+                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
           )}
         </div>
       </main>
+      {showGameSettings && (
+        <SettingRuleModal
+          onConfirmAction={handleConfirmSettings}
+          onCloseAction={() => setShowGameSettings(false)}
+        />
+      )}
+
+      {/* ルーム作成中ローディング */}
+      {isCreatingRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
+          <div className="text-center space-y-6 animate-in fade-in duration-300">
+            <div className="relative">
+              <div className="w-20 h-20 mx-auto">
+                <Loader2 className="w-full h-full text-red-500 animate-spin" />
+              </div>
+              <div className="absolute inset-0 w-20 h-20 mx-auto rounded-full bg-red-500/20 blur-xl animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-red-400 tracking-wider animate-pulse">
+                ルーム作成中
+              </h3>
+              <p className="text-sm text-slate-500 font-mono">
+                &gt; しばらくお待ちください...
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-1">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-bounce" />
+            </div>
+          </div>
+        </div>
+      )}
+
       <RuleModal isOpen={isRuleOpen} onClose={() => setIsRuleOpen(false)} />
     </div>
   );
