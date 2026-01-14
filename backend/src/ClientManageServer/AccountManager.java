@@ -8,6 +8,15 @@ public class AccountManager {
     private static final String DB_USER = "group_a";
     private static final String DB_PASS = "group_a";
 
+    static {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("MySQL Driver loaded");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     // ログイン処理
     public boolean login(String userId , String password) {
 
