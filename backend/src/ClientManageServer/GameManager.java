@@ -4,31 +4,52 @@ public class GameManager {
     private roomService service = new roomService();
     private AccountManager account = new AccountManager();
 
-    public String handleAction(Message msg) {
-        String action = msg.getAction();
+    public String handleAction(BaseMassage msg) {
+        // 1. まずメッセージの種類(type)をチェック
+        String type = msg.getType();
 
-        switch (action) {
-            case "CREATE":
-                //ユーザIDはオーナーのID
-                Room newRoom = service.addRoom(msg.getNumOfPlayer(), msg.getNumOfLife(), msg.getUserId());
-                return "" + newRoom.getRoomId();
+        // 2. typeに応じて、msgを具体的な子クラスにキャストして処理する
+        if (type.equals("CREATE_ROOM")) {
+            // CreateMessageに変換（キャスト）
+            CreateMessage cMsg = (CreateMessage) msg;
+            Room newRoom = service.addRoom(cMsg.getNumOfPlayer(), cMsg.getNumOfLife(), cMsg.getUserId());
+            return "" + newRoom.getRoomId();
 
-            case "JOIN":
-                return service.joinProcess(msg.getRoomId(), msg.getUserId());
+        } else if (type.equals("JOIN_ROOM")) {
+            // JoinMessageに変換（キャスト）
+            JoinMessage jMsg = (JoinMessage) msg;
+            return service.joinProcess(jMsg.getRoomId(), jMsg.getUserId());
 
-            case "REMOVE":
-                return service.removePlayer(msg.getRoomId(), msg.getUserId());
-            case "LOGIN":
-                if(account.login(msg.getUserId(), msg.getPassword()))
-                    return "ログイン成功";
-            case "LOGOUT":
-                if(account.logout(msg.getUserId()))
-                    return "ログアウト成功";
-            case "REGI":
-                if(account.registrateNewAccount(msg.getUserId(), msg.getPassword()))
-                    return "アカウントを登録しました";
-            default:
-                return "Unknown action: " + action;
+        } else if (type.equals("REMOVE_ROOM")) {
+            // RemoveMessageに変換（キャスト）
+            RemoveMessage rMsg = (RemoveMessage) msg;
+            return service.removePlayer(rMsg.getRoomId(), rMsg.getUserId());
+
+        } else if (type.equals("LOGIN")) {
+            LoginMessage loginMsg = (LoginMessage) msg;
+            if (account.login(loginMsg.getUserId(), loginMsg.getPassword())) {
+                return "ログイン成功";
+            } else {
+                return "ログイン失敗";
+            }
+
+        } else if (type.equals("LOGOUT")) {
+            LogoutMessage logoutMsg = (LogoutMessage) msg;
+            if (account.logout(logoutMsg.getUserId())) {
+                return "ログアウト成功";
+            } else {
+                return "ログアウト失敗";
+            }
+
+        } else if (type.equals("SIGNUP")) {
+            SignUpMessage sMsg = (SignUpMessage) msg;
+            if (account.registrateNewAccount(sMsg.getUserId(), sMsg.getPassword())) {
+                return "アカウントを登録しました";
+            } else {
+                return "登録に失敗しました";
+            }
         }
+
+        return "Unknown action: " + type;
     }
 }
