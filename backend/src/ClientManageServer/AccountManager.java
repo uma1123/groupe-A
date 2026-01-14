@@ -8,7 +8,7 @@ public class AccountManager {
     private static final String DB_USER = "root";
     private static final String DB_PASS = "password";
 
-    // ログイン処理
+    // ログイン処理です
     public boolean login(String userId, String password) {
 
         String selectSql = "SELECT password FROM users WHERE user_id = ?";
