@@ -1,5 +1,8 @@
 package ClientManageServer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BaseMessage {
     protected String type;
 
@@ -86,16 +89,40 @@ class JoinMessage extends BaseMessage {
     public String getUserId() { return userId; }
 }
 
-class RemoveMessage extends BaseMessage {
+class TransitionMessage extends BaseMessage {
     private int roomId;
-    private String userId;
+    private int userCount;
+    private int life;
+    private List<String> users;
 
-    public RemoveMessage(int roomId, String userId) {
-        super("REMOVE_ROOM");
+
+    public TransitionMessage(int roomId, int userCount, int life, List<User> roomplayerlist) {
+        super("GAME_RULE");
         this.roomId = roomId;
-        this.userId = userId;
+        this.userCount = userCount;
+        this.life = life;
+        this.users = new ArrayList<>();
+        for (User user : roomplayerlist) {
+            this.users.add(user.getUserId());
+        }
     }
-
-    public int getRoomId() { return roomId; }
-    public String getUserId() { return userId; }
 }
+
+    class RemoveMessage extends BaseMessage {
+        private int roomId;
+        private String userId;
+
+        public RemoveMessage(int roomId, String userId) {
+            super("REMOVE_ROOM");
+            this.roomId = roomId;
+            this.userId = userId;
+        }
+
+        public int getRoomId() {
+            return roomId;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+    }
