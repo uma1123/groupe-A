@@ -1,5 +1,7 @@
 package ApplicationServer;
 
+import ClientManageServer.BaseMessage;
+import ClientManageServer.Message;
 import com.google.gson.Gson;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
@@ -9,14 +11,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public enum MessageType{
-    START_GAME,
-    SUBMIT_NUMBER,
-    PLAYER_INFO,
-    GAME_RESULT,
-    ROUND_RESULT,
-    GAME_RULE
-}
+
 
 @ServerEndpoint("/sample")
 
@@ -27,7 +22,11 @@ public class ApplicationEndpoint {
     private int privateIncrementTest = 0;
     private static int staticIncrementTest = 0;
 
+
     static Gson gson = new Gson();
+
+    AppController appController;
+
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig ec) {
@@ -47,12 +46,6 @@ public class ApplicationEndpoint {
         BaseMessage receivedMessage = gson.fromJson(message,BaseMessage.class);
         //switchで処理方法を区別
         switch (receivedMessage.type){
-            case START_GAME:
-                GameStartMessage gameStartMessage = gson.fromJson(message,GameStartMessage.class);
-                //ゲームスタート時の処理をここに追加
-
-                break;
-
             case SUBMIT_NUMBER:
                 NumberMessage numberMessage = gson.fromJson(message,NumberMessage.class);
                 //数字受信時の処理をここに追加
@@ -62,6 +55,7 @@ public class ApplicationEndpoint {
             case PLAYER_INFO:
                 PlayerInfoMessage playerInfoMessage = gson.fromJson(message,PlayerInfoMessage.class);
                 //プレイヤー情報受信時の処理をここに追加
+                appController.passPlayerInfo(playerInfoMessage.roomid,playerInfoMessage.userid);
 
                 break;
 
@@ -80,8 +74,19 @@ public class ApplicationEndpoint {
             case GAME_RULE:
                 RuleMessage ruleMessage = gson.fromJson(message,RuleMessage.class);
                 //ルール受信時の処理をここに追加
+                //アプリケーションコントローラのインスタンスを生成＝ゲーム開始
+                this.appController = new AppController();
+                //ルームの初期情報をAppControllerに送信させる
+                passDefaultInfo(ruleMessage.roomid,ruleMessage.playercount,ruleMessage.life);
 
                 break;
+
+            /*case RAND_RULE:
+                RandRuleMessage randRuleMessage = gson.fromJson(message,RandRuleMessage.class);
+                //ランダムルール送信時の処理をここに追加
+
+
+                break;*/
         }
 
     }
@@ -98,7 +103,9 @@ public class ApplicationEndpoint {
         System.out.println("[WebSocketServerSample] onError:" + session.getId());
     }
 
-    /*public void sendMessage(Session session, String message) {
+
+
+    public void sendMessage(Session session, String message) {
         System.out.println("[WebSocketServerSample] sendMessage(): " + message);
         try {
             // 同期送信（sync）
@@ -116,15 +123,9 @@ public class ApplicationEndpoint {
         });
     }
 
-     */
 
     //json型メッセージ仮置きクラス
-    public class BaseMessage{
+    public static class BaseMessage{
         public MessageType type;
     }
-
-
-
-
-
 }
