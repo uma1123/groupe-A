@@ -192,9 +192,6 @@ public class ResultJudgement {
             }
         }
     }
-    public boolean receiveVotingResult(String NumData){
-        return true;
-    }
     public double calculateByRules(String ruleId,PlayerList pl){
         /*averageを初期化*/
         this.average=0;
