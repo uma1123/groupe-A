@@ -11,10 +11,9 @@ public class ClientManageCom {
     static String protocol = "ws";
     static int port = 8080;
 
-
     public static void main(String[] args) throws Exception {
         Server server = new Server(protocol, port, contextRoot, null, Endpoint.class/*, EndpointExample.class*/);
-        System.out.println("server: " + server);
+        System.out.println("server:"+server);
 
         try {
             server.start();
