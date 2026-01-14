@@ -10,9 +10,6 @@ public class ResultJudgement {
     double ratio;
     public void manageLife(String ruleId,PlayerList pl){
         /*プレイヤーが2人のとき専用ルールに変更*/
-        if(pl.getPlayerList().size()==2){
-            ruleId="ONE_ON_ONE";
-        }
         switch (ruleId){
             case "RULE_ODD","RULE_EVEN","RULE_MULTIPLE_OF_3","RULE_PRIME"->{//通常通りライフの減算をするルールの場合
                 List<Player> winners=new ArrayList<Player>();//勝者を保存するインスタンス
@@ -195,18 +192,11 @@ public class ResultJudgement {
             }
         }
     }
-    public boolean receiveVotingResult(String NumData){
-        return true;
-    }
     public double calculateByRules(String ruleId,PlayerList pl){
         /*averageを初期化*/
         this.average=0;
         /*ラウンドに参加中のプレイヤー数を取得*/
         int playerCount=pl.getPlayerList().size();
-        /*プレイヤーが2人のとき専用ルールに変更*/
-        if(playerCount==2){
-            ruleId="ONE_ON_ONE";
-        }
         /*ルールごとに分岐して平均を計算*/
         switch (ruleId){
             case "RULE_ODD"://奇数のみ
@@ -324,8 +314,5 @@ public class ResultJudgement {
         /*計算結果を返す*/
         this.result=this.average*this.ratio;
         return this.result;
-    }
-    public boolean reqSendRank(){
-        return true;
     }
 }
