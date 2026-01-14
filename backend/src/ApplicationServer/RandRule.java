@@ -7,10 +7,10 @@ public class RandRule {
         this.randRuleId=randRuleId;
         this.detailRule=detailRule;
     }
-    String getRandRuleId(){
+    public String getRandRuleId(){
         return this.randRuleId;
     }
-    String getDetailRule() {
+    public String getDetailRule() {
         return this.detailRule;
     }
 }

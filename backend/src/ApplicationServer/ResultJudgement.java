@@ -8,7 +8,7 @@ public class ResultJudgement {
     double result;
     double average;
     double ratio;
-    void manageLife(String ruleId,PlayerList pl){
+    public void manageLife(String ruleId,PlayerList pl){
         /*プレイヤーが2人のとき専用ルールに変更*/
         if(pl.getPlayerList().size()==2){
             ruleId="ONE_ON_ONE";
@@ -195,10 +195,10 @@ public class ResultJudgement {
             }
         }
     }
-    boolean receiveVotingResult(String NumData){
+    public boolean receiveVotingResult(String NumData){
         return true;
     }
-    double calculateByRules(String ruleId,PlayerList pl){
+    public double calculateByRules(String ruleId,PlayerList pl){
         /*averageを初期化*/
         this.average=0;
         /*ラウンドに参加中のプレイヤー数を取得*/
@@ -325,7 +325,7 @@ public class ResultJudgement {
         this.result=this.average*this.ratio;
         return this.result;
     }
-    boolean reqSendRank(){
+    public boolean reqSendRank(){
         return true;
     }
 }
