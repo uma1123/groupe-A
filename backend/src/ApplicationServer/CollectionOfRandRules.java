@@ -25,7 +25,6 @@ public class CollectionOfRandRules {
         RandRule rule6 =new RandRule("RULE_LIFE_PLUS1_ON_JUST_RESULT","ぴったりのときライフ+1");
         rulelist.add(rule6);
 
-
         return rulelist;
     }
     public ArrayList<RandRule> getRandRuleList(){
