@@ -46,7 +46,7 @@ public class AccountManager {
     }
 
     // ログアウト処理（login_status を false に）
-    boolean logout(String userId) {
+    public boolean logout(String userId) {
 
         String sql = "UPDATE users SET login_status = FALSE WHERE user_id = ?";
 
@@ -68,7 +68,7 @@ public class AccountManager {
     }
 
     // アカウント登録
-    boolean registrateNewAccount(String userId , String password) {
+    public boolean registrateNewAccount(String userId, String password) {
 
         String checkSql = "SELECT user_id FROM users WHERE user_id = ?";
         String insertSql =
