@@ -9,7 +9,7 @@ public class AccountManager {
     private static final String DB_PASS = "group_a";
 
     // ログイン処理
-    boolean login(String userId , String password) {
+    public boolean login(String userId , String password) {
 
         String selectSql = "SELECT password FROM users WHERE user_id = ?";
         String updateSql = "UPDATE users SET login_status = TRUE WHERE user_id = ?";
