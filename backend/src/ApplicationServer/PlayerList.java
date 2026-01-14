@@ -5,14 +5,18 @@ import java.util.List;
 
 public class PlayerList {
     private List<Player> playerlist;
+    private int playerCount;
+    private int life;
 
-    public PlayerList(){
+    public PlayerList(int playerCount,int life){
+        this.playerCount=playerCount;
         this.playerlist=new ArrayList<>();
+        this.life=life;
     }
 
     //プレイヤー追加
-    public boolean SavePlayerInfo(Player player) {
-        this.playerlist.add(player);
+    public boolean SavePlayerInfo(String userId) {
+        this.playerlist.add(new Player(userId,life));
         return true;
     }
 
