@@ -8,7 +8,7 @@ public class RuleLottery {
     public RuleLottery(){
         this.currentRule=new Rule();
     }
-    String drawRandRule(int playerCount){//プレイヤーが2人のときは専用のルール
+    public String drawRandRule(int playerCount){//プレイヤーが2人のときは専用のルール
         if(playerCount==2){
             return "ONE_ON_ONE";
         }
