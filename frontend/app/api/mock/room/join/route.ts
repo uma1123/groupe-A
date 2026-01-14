@@ -1,32 +1,36 @@
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { roomId } = body;
+  await new Promise((resolve) => setTimeout(resolve, 600));
 
-  // テスト用ロジック: "1234" という部屋だけが存在することにする
-  if (roomId === "1234") {
+  try {
+    const body = await request.json();
+    const { type, userId, roomId } = body;
+
+    // バリデーション
+    if (
+      type !== "JOIN_ROOM" ||
+      typeof userId !== "string" ||
+      typeof roomId !== "string"
+    ) {
+      return NextResponse.json(
+        { success: false, message: "不正なリクエスト形式です。" },
+        { status: 400 }
+      );
+    }
+
+    // Mockロジック: 特定のID（例: 9999）は入れない、等のテストをしたければここに書く
+    // 基本は成功させる
     return NextResponse.json({
       success: true,
-      message: "ルームへの参加が可能です",
-      room: {
-        id: "1234",
-        status: "WAITING",
-        currentPlayers: 3, // 現在3人いる設定
-        maxPlayers: 9,
-      },
+      roomId: roomId,
+      message: "Joined room successfully",
     });
-  } else if (roomId === "9999") {
-    // 満員のエラーテスト用
+  } catch (error) {
+    console.error("Error in joining room:", error);
     return NextResponse.json(
-      { success: false, message: "このルームは満員です" },
-      { status: 400 } // Bad Request
-    );
-  } else {
-    // 存在しない部屋
-    return NextResponse.json(
-      { success: false, message: "ルームが見つかりません" },
-      { status: 404 } // Not Found
+      { success: false, message: "Server Error" },
+      { status: 500 }
     );
   }
 }

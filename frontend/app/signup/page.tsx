@@ -1,50 +1,20 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAccountController } from "@/hooks/useAccountController";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function SignupPage() {
-  const router = useRouter();
-  const auth = useAuth();
+  const { signup, isLoading, error } = useAccountController();
 
   // フォームの状態管理
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  // ログイン処理
-  const handleLogin = async (e: React.FormEvent) => {
+  // 新規登録処理
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/mock/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        console.log("Signup API success, username:", username, "data:", data);
-        if (typeof window !== "undefined") sessionStorage.setItem("username", username);
-        auth.setUser(username);
-        router.push("/lobby");
-      } else {
-        setError(data.message || "新規登録に失敗しました。");
-      }
-    } catch (error) {
-      setError("新規登録中にエラーが発生しました。");
-      console.error("Signup error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    await signup(username, password);
   };
 
   return (
@@ -57,7 +27,7 @@ export default function SignupPage() {
           <p className="text-md text-red-200/60 mt-1">新規登録してください</p>
         </header>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4">
           {error && (
             <div className="p-3 text-sm text-red-200 bg-red-900/60 border border-red-700 rounded">
               {error}

@@ -4,12 +4,12 @@ import java.sql.*;
 
 public class AccountManager {
 
-    private static final String DB_URL  = "jdbc:mysql://localhost:3306/sample";
-    private static final String DB_USER = "root";
-    private static final String DB_PASS = "password";
+    private static final String DB_URL  = "jdbc:mysql://sql.yamazaki.se.shibaura-it.ac.jp:13308/db_group_a";
+    private static final String DB_USER = "group_a";
+    private static final String DB_PASS = "group_a";
 
     // ログイン処理
-    public boolean login(String userId, String password) {
+    boolean login(String userId , String password) {
 
         String selectSql = "SELECT password FROM users WHERE user_id = ?";
         String updateSql = "UPDATE users SET login_status = TRUE WHERE user_id = ?";
