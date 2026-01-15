@@ -1,6 +1,12 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type {
+  StartGameMessage,
+  GoToGameServerResponse,
+  ErrorResponse,
+} from "@/types/websocket";
+import { gameWebSocket } from "@/lib/websocket";
 
 export const useRoomController = () => {
   const router = useRouter();
@@ -8,43 +14,44 @@ export const useRoomController = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ゲーム開始要求
+  useEffect(() => {
+    // ゲームサーバへの移動指示を受信
+    gameWebSocket.on("GO_TO_GAME_SERVER", (data: GoToGameServerResponse) => {
+      console.log("🎮 ゲームサーバへ移動:", data);
+
+      // ★ クライアント管理サーバを切断
+      gameWebSocket.disconnectClientManage();
+
+      // ★ ゲームサーバに接続
+      const gameUrl =
+        data.nextEndpoint ||
+        process.env.NEXT_PUBLIC_GAME_WS_URL ||
+        "ws://localhost:8081/game";
+      gameWebSocket.connectToGameServer(gameUrl);
+
+      // ★ ゲーム画面へ遷移
+      router.push(`/game/${data.roomId}`);
+    });
+
+    return () => {
+      gameWebSocket.off("GO_TO_GAME_SERVER");
+    };
+  }, [router]);
+
   const startGame = async (roomId: string) => {
     setIsLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/mock/game/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "START_GAME",
-          userId: user,
-          roomId,
-        }),
-      });
-      const data = await res.json();
+    const message: StartGameMessage = {
+      type: "START_GAME",
+      userId: user!,
+      roomId,
+    };
 
-      if (res.ok && data.success) {
-        router.push(`/game/${roomId}`);
-        return true;
-      } else {
-        setError(data.message || "ゲーム開始に失敗しました");
-        return false;
-      }
-    } catch (error) {
-      console.error(error);
-      setError("ゲーム開始中にエラーが発生しました");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    gameWebSocket.send(message);
   };
 
   const leaveRoom = () => {
-    // WebSocket切断などの処理をここに書く
     router.push("/lobby");
   };
 
