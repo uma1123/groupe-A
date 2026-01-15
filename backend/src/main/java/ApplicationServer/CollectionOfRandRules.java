@@ -1,0 +1,38 @@
+package ApplicationServer;
+
+import java.util.ArrayList;
+
+public class CollectionOfRandRules {
+    public int ruleCount;
+    private ArrayList<RandRule> randRuleList;
+
+    public CollectionOfRandRules() {
+        this.randRuleList = Makerules();
+        this.ruleCount = randRuleList.size();
+    }
+    private ArrayList<RandRule>Makerules(){
+        ArrayList<RandRule>rulelist=new ArrayList<>();
+        RandRule rule1=new RandRule("RULE_ODD","奇数のみ選択可能(それ以外を選んだ場合ライフ-1)",-1);
+        rulelist.add(rule1);
+        RandRule rule2=new RandRule("RULE_EVEN","偶数のみ選択可能(それ以外を選んだ場合ライフ-1)",-1);
+        rulelist.add(rule2);
+        RandRule rule3=new RandRule("RULE_MULTIPLE_OF_3","3の倍数のみ選択可能(それ以外を選んだ場合ライフ-1)",-1);
+        rulelist.add(rule3);
+        RandRule rule4=new RandRule("RULE_PRIME","素数のみ選択可能(それ以外を選んだ場合ライフ-1)",-1);
+        rulelist.add(rule4);
+        RandRule rule5 =new RandRule("RULE_CLOSEST_AND_FARTHEST","一番近い人と遠い人のみライフ-1",-1);
+        rulelist.add(rule5);
+        RandRule rule6 =new RandRule("RULE_LIFE_PLUS1_ON_JUST_RESULT","ぴったりのときライフ+1",1);
+        rulelist.add(rule6);
+        RandRule rule7=new RandRule("ONE_ON_ONE","タイマン特別ルール:勝敗は倍率により0と100の優劣が変わり、該当する選択者がいる場合のみ成立する",-1);
+        rulelist.add(rule7);
+
+        return rulelist;
+    }
+    public ArrayList<RandRule> getRandRuleList(){
+        return this.randRuleList;
+    }
+    public int getRuleCount(){
+        return this.ruleCount;
+    }
+}
