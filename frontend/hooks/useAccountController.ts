@@ -1,6 +1,13 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type {
+  LoginMessage,
+  SignupMessage,
+  AuthSuccessResponse,
+  ErrorResponse,
+} from "@/types/websocket";
+import { gameWebSocket } from "@/lib/websocket";
 
 export const useAccountController = () => {
   const router = useRouter();
@@ -9,66 +16,58 @@ export const useAccountController = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    // クライアント管理サーバに接続
+    gameWebSocket.connectToClientManage(
+      process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
+        "ws://localhost:8080/client-manage"
+    );
+
+    // 認証成功ハンドラ
+    gameWebSocket.on("AUTH_SUCCESS", (data: AuthSuccessResponse) => {
+      console.log("✅ 認証成功:", data);
+      setUser(data.userId);
+      setIsLoading(false);
+      router.push("/lobby");
+    });
+
+    // エラーハンドラ
+    gameWebSocket.on("ERROR", (data: ErrorResponse) => {
+      console.error("❌ エラー:", data);
+      setError(data.message);
+      setIsLoading(false);
+    });
+
+    return () => {
+      gameWebSocket.off("AUTH_SUCCESS");
+      gameWebSocket.off("ERROR");
+    };
+  }, [router, setUser]);
+
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/mock/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ type: "LOGIN", userId: username, password }),
-      });
-      const data = await res.json();
+    const message: LoginMessage = {
+      type: "LOGIN",
+      userId: username,
+      password,
+    };
 
-      if (res.ok && data.success) {
-        // 通信が成功したのでユーザー情報をセット
-        setUser(username);
-
-        router.push("/lobby");
-        return true;
-      } else {
-        setError("ログインに失敗しました。");
-        return false;
-      }
-    } catch (err) {
-      console.error(err);
-      setError("ログイン中にエラーが発生しました。");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    gameWebSocket.send(message);
   };
 
   const signup = async (username: string, password: string) => {
-    // ... (loginとほぼ同じ流れで、最後に setUser(username) する)
     setIsLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/mock/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "REGISTER", userId: username, password }),
-      });
-      const data = await res.json();
 
-      if (res.ok && data.success) {
-        setUser(username); // 新規登録後も自動ログイン扱いにする
-        router.push("/lobby");
-        return true;
-      } else {
-        setError(data.message || "登録に失敗しました。");
-        return false;
-      }
-    } catch (err) {
-      console.error(err);
-      setError("エラーが発生しました。");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    const message: SignupMessage = {
+      type: "SIGNUP",
+      userId: username,
+      password,
+    };
+
+    gameWebSocket.send(message);
   };
 
   return { login, signup, isLoading, error };
