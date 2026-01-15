@@ -1,6 +1,14 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type {
+  CreateRoomMessage,
+  JoinRoomMessage,
+  CreateRoomSuccessResponse,
+  JoinRoomSuccessResponse,
+  ErrorResponse,
+} from "@/types/websocket";
+import { gameWebSocket } from "@/lib/websocket";
 
 export const useLobbyController = () => {
   const router = useRouter();
@@ -8,79 +16,70 @@ export const useLobbyController = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    // ルーム作成成功
+    gameWebSocket.on(
+      "CREATE_ROOM_SUCCESS",
+      (data: CreateRoomSuccessResponse) => {
+        console.log("✅ ルーム作成成功:", data);
+        setIsLoading(false);
+        router.push(`/room/${data.roomId}`);
+      }
+    );
+
+    // ルーム参加成功
+    gameWebSocket.on("JOIN_ROOM_SUCCESS", (data: JoinRoomSuccessResponse) => {
+      console.log("✅ ルーム参加成功:", data);
+      setIsLoading(false);
+      router.push(`/room/${data.roomId}`);
+    });
+
+    // エラーハンドラ
+    gameWebSocket.on("ERROR", (data: ErrorResponse) => {
+      console.error("❌ エラー:", data);
+      setError(data.message);
+      setIsLoading(false);
+    });
+
+    return () => {
+      gameWebSocket.off("CREATE_ROOM_SUCCESS");
+      gameWebSocket.off("JOIN_ROOM_SUCCESS");
+      gameWebSocket.off("ERROR");
+    };
+  }, [router]);
+
   // ルーム作成処理
   const createRoom = async (maxPlayers: number, initialLife: number) => {
     setIsLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/mock/room/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "CREATE_ROOM",
-          userId: user,
-          settings: {
-            maxPlayers,
-            lives: initialLife,
-          },
-        }),
-      });
-      const data = await res.json();
 
-      if (res.ok && data.success) {
-        return data.roomId;
-      } else {
-        setError(data.message || "ルームの作成に失敗しました。");
-        return false;
-      }
-    } catch (error) {
-      console.error(error);
-      setError("ルームの作成中にエラーが発生しました。");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    const message: CreateRoomMessage = {
+      type: "CREATE_ROOM",
+      userId: user!,
+      numOfPlayer: maxPlayers, // ★ 変更
+      numOfLife: initialLife, // ★ 変更
+    };
+
+    gameWebSocket.send(message);
   };
 
   // ルーム参加処理
   const joinRoom = async (roomId: string | number) => {
     if (!roomId || (typeof roomId === "number" && isNaN(roomId))) {
       setError("有効なルームIDを入力してください。");
-      return false;
+      return;
     }
 
     setIsLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/mock/room/join", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "JOIN_ROOM",
-          userId: user,
-          roomId: roomId.toString(),
-        }),
-      });
-      const data = await res.json();
 
-      if (res.ok && data.success) {
-        router.push(`/room/${roomId}`);
-        return true;
-      } else {
-        setError(data.message || "ルームへの参加に失敗しました。");
-        return false;
-      }
-    } catch (error) {
-      console.error(error);
-      setError("ルームへの参加中にエラーが発生しました。");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+    const message: JoinRoomMessage = {
+      type: "JOIN_ROOM",
+      userId: user!,
+      roomId: Number(roomId), // ★ 数値に変換
+    };
+
+    gameWebSocket.send(message);
   };
 
   return { isLoading, error, createRoom, joinRoom };

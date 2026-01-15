@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
-import { RoomProvider } from "@/context/RoomContext";
-import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { RoomProvider } from "@/context/RoomContext";
+import { WebSocketProvider } from "@/context/WebSocketContext";
+import { WebSocketStatus } from "@/app/components/WebSocketStatus"; // ★ 追加
 
 export const metadata: Metadata = {
-  title: "天秤ゲーム",
-  description: "天秤ゲーム",
+  title: "Groupe A Game",
+  description: "Multiplayer number guessing game",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="ja">
       <body>
-        <AuthProvider>
-          <RoomProvider>{children}</RoomProvider>
-        </AuthProvider>
+        <WebSocketProvider>
+          <AuthProvider>
+            <RoomProvider>
+              <WebSocketStatus />
+              {children}
+            </RoomProvider>
+          </AuthProvider>
+        </WebSocketProvider>
       </body>
     </html>
   );

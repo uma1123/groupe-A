@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import type { SignupMessage } from "@/types/websocket";
+
 /*
   新規登録処理を模倣するモックAPIエンドポイント
   POSTリクエストを受け取り、ユーザ名とパスワードを検証します。
@@ -8,7 +10,19 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { username, password } = body;
+  const { type, username, password } = body;
+
+  // ✅ 型チェックを追加
+  if (
+    type !== "SIGNUP" ||
+    typeof username !== "string" ||
+    typeof password !== "string"
+  ) {
+    return NextResponse.json(
+      { success: false, message: "不正なリクエスト形式です。" },
+      { status: 400 }
+    );
+  }
 
   // 簡易的なバリデーション
   // ユーザー名とパスワードが入力されているか確認
