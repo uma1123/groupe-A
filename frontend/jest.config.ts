@@ -1,7 +1,7 @@
 import type { Config } from "jest";
 
 const config: Config = {
-  preset: "ts-jest",
+  // Use Babel to transform TS/TSX via babel-jest
   testEnvironment: "jsdom",
   roots: ["<rootDir>"],
   testMatch: ["**/__tests__/**/*.test.ts?(x)", "**/__test__/**/*.test.ts?(x)"],
@@ -10,7 +10,7 @@ const config: Config = {
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   transform: {
-    "^.+\\.(ts|tsx)$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.json" }],
+    "^.+\\.[tj]sx?$": "babel-jest",
   },
 };
 

@@ -63,6 +63,12 @@ export type NextRoundMessage = {
   roomId: string;
 };
 
+// ログアウト要求
+export type LogoutMessage = {
+  type: "LOGOUT";
+  userId: string;
+};
+
 // 送信メッセージのユニオン型
 export type ClientMessage =
   | SignupMessage
@@ -71,6 +77,7 @@ export type ClientMessage =
   | JoinRoomMessage
   | StartGameMessage
   | SubmitNumberMessage
+  | LogoutMessage
   | NextRoundMessage
   | LeaveRoomMessage;
 
@@ -92,6 +99,11 @@ export type ErrorResponse = {
   type: "ERROR";
   errorId: string;
   message: string;
+};
+
+export type LogoutSuccessResponse = {
+  type: "LOGOUT_SUCCESS";
+  userId: string;
 };
 
 // --- 認証・ロビー応答 ---
@@ -218,6 +230,7 @@ export type ServerResponse =
   | JoinRoomSuccessResponse
   | PlayerJoinedResponse
   | PlayerLeftResponse // ★ 追加
+  | LogoutSuccessResponse
   | GoToGameServerResponse
   | GameStartResponse
   | RoundStartResponse

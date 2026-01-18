@@ -1,5 +1,28 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { act } from "react";
+import { jest } from "@jest/globals";
+
+// WebSocket を使うようになったのでモックをテスト内で生成
+jest.mock("@/lib/websocket", () => {
+  const send = jest.fn();
+  const on = jest.fn().mockImplementation(() => () => {});
+  const isConnected = jest.fn().mockReturnValue(true);
+  const connectToClientManage = jest.fn();
+  const disconnectAll = jest.fn();
+
+  return {
+    gameWebSocket: {
+      on,
+      isConnected,
+      send,
+      connectToClientManage,
+      disconnectAll,
+    },
+  };
+});
+
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { gameWebSocket } from "@/lib/websocket";
 import {
   afterEach,
   beforeAll,
@@ -7,23 +30,22 @@ import {
   describe,
   expect,
   it,
-  jest,
 } from "@jest/globals";
 
 const createSessionStorageMock = () => {
-  let store: Record<string, string> = {};
+  let store = {};
   return {
-    getItem: (key: string) => (key in store ? store[key] : null),
-    setItem: (key: string, value: string) => {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, value) => {
       store[key] = String(value);
     },
-    removeItem: (key: string) => {
+    removeItem: (key) => {
       delete store[key];
     },
     clear: () => {
       store = {};
     },
-  } as Storage;
+  };
 };
 
 function Consumer() {
@@ -44,7 +66,7 @@ function Outside() {
 }
 
 describe("AuthContext", () => {
-  let sessionMock: Storage;
+  let sessionMock;
 
   beforeAll(() => {
     sessionMock = createSessionStorageMock();
@@ -56,13 +78,12 @@ describe("AuthContext", () => {
 
   beforeEach(() => {
     sessionMock.clear();
+    jest.clearAllMocks();
     // fetch を毎回モック
-    global.fetch = jest
-      .fn<typeof global.fetch>()
-      .mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: true }),
-      } as Response);
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
     jest.spyOn(console, "log").mockImplementation(() => {}); // ログの抑制
   });
 
@@ -74,7 +95,7 @@ describe("AuthContext", () => {
     render(
       <AuthProvider>
         <Consumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId("user").textContent).toBe("");
   });
@@ -84,7 +105,7 @@ describe("AuthContext", () => {
     render(
       <AuthProvider>
         <Consumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId("user").textContent).toBe("alice");
   });
@@ -93,7 +114,7 @@ describe("AuthContext", () => {
     render(
       <AuthProvider>
         <Consumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
     fireEvent.click(screen.getByText("set"));
     expect(screen.getByTestId("user").textContent).toBe("bob");
@@ -109,18 +130,28 @@ describe("AuthContext", () => {
     render(
       <AuthProvider>
         <Consumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
     expect(screen.getByTestId("user").textContent).toBe("carol");
 
     fireEvent.click(screen.getByText("logout"));
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/mock/logout",
-      expect.objectContaining({
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      })
+    // WebSocket 経由で送信されることを期待（fetch は呼ばれない）
+    expect(gameWebSocket.send).toHaveBeenCalledWith({
+      type: "LOGOUT",
+      userId: "carol",
+    });
+    // モックされた on ハンドラを呼び出して成功をシミュレート
+    const onMock = gameWebSocket.on as unknown as jest.Mock;
+    const successCall = onMock.mock.calls.find(
+      (c: any[]) => c[0] === "LOGOUT_SUCCESS",
     );
+    if (successCall) {
+      const handler = successCall[1];
+      await act(async () => {
+        await handler({ type: "LOGOUT_SUCCESS" });
+      });
+    }
+    expect(global.fetch).not.toHaveBeenCalled();
     expect(screen.getByTestId("user").textContent).toBe("");
     expect(window.sessionStorage.getItem("username")).toBeNull();
   });
@@ -129,16 +160,17 @@ describe("AuthContext", () => {
     render(
       <AuthProvider>
         <Consumer />
-      </AuthProvider>
+      </AuthProvider>,
     );
     fireEvent.click(screen.getByText("logout"));
     expect(global.fetch).not.toHaveBeenCalled();
+    expect(gameWebSocket.send).not.toHaveBeenCalled();
     expect(screen.getByTestId("user").textContent).toBe("");
   });
 
   it("Provider外でuseAuthを呼ぶとエラー", () => {
     expect(() => render(<Outside />)).toThrow(
-      "useAuth must be used within AuthProvider"
+      "useAuth must be used within AuthProvider",
     );
   });
 });
