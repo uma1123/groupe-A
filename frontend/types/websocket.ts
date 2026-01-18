@@ -183,6 +183,7 @@ export type AllPlayersResultResponse = {
     result: "WIN" | "LOSE" | "DRAW";
     lives: number;
     isDead: boolean;
+    penalty?: number; // このラウンドで受けた追加ペナルティ（任意）
   }[];
   targetValue: number;
   average: number; // 全員の平均値

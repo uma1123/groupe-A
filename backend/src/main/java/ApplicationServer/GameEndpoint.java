@@ -215,6 +215,34 @@ public class GameEndpoint {
 
         game.playerNumbers.clear();
 
+        // ラウンドごとにルールを再抽選する（ただし開始時の第1ラウンドは既にセット済みのまま）
+        if (game.currentRound == 1) {
+            // startGame ですでに firstRule をセットしているため、そのまま使用
+        } else {
+            messages.ServerMessages.RuleData newRule = null;
+            // 生存プレイヤー数をカウント（ライフが0より大きいプレイヤーを生存とみなす）
+            int aliveCount = 0;
+            for (Map.Entry<String, Integer> e : game.playerLives.entrySet()) {
+                if (e.getValue() != null && e.getValue() > 0) aliveCount++;
+            }
+            // 残存が2人なら必ず ONE_ON_ONE を適用
+            if (aliveCount == 2) {
+                for (messages.ServerMessages.RuleData r : CollectionOfRandRules.getAllRules()) {
+                    if ("ONE_ON_ONE".equals(r.id)) {
+                        newRule = r;
+                        break;
+                    }
+                }
+            }
+            // 上記で取得できなければ通常抽選。ただしONE_ON_ONEが出たら再抽選（生存人数が2を超える場合）
+            if (newRule == null) {
+                do {
+                    newRule = CollectionOfRandRules.getRandomRule();
+                } while (aliveCount > 2 && "ONE_ON_ONE".equals(newRule.id));
+            }
+            game.currentRule = newRule;
+        }
+
         RoundStartResponse response = new RoundStartResponse();
         response.roomId = game.roomId;
         response.currentRound = game.currentRound;
@@ -244,8 +272,12 @@ public class GameEndpoint {
         game.playerNumbers.put(userId, num);
         System.out.println("📥 受信: " + userId + " => " + num + " (room=" + roomId + ")");
 
-        // 判定対象はゲームの参加者数（alive判定をするならここで調整可能）
-        int expected = game.players.size();
+        // 判定対象は現在『生存している』プレイヤー数（ライフ>0 のプレイヤー）にする
+        int expected = 0;
+        for (Map.Entry<String, Integer> e : game.playerLives.entrySet()) {
+            Integer lv = e.getValue();
+            if (lv != null && lv > 0) expected++;
+        }
         if (game.playerNumbers.size() >= expected) {
             processRoundResults(roomId);
         }
@@ -263,12 +295,13 @@ public class GameEndpoint {
 
         if (submissions.isEmpty()) return;
 
-        // 勝者判定
-        Map<String, Object> judgement = ResultJudgement.judgeRound(submissions);
+        // 勝者判定 (ルール情報を渡す)
+        Map<String, Object> judgement = ResultJudgement.judgeRound(submissions, game.currentRule);
         double average = (double) judgement.get("average");
         double targetValue = (double) judgement.get("targetValue");
         List<String> winners = (List<String>) judgement.get("winners");
         List<ResultJudgement.PlayerResult> allResults = (List<ResultJudgement.PlayerResult>) judgement.get("allResults");
+        Map<String, Integer> penalties = (Map<String, Integer>) judgement.get("penalties");
 
         // 現在のルール情報（lifeDamage を参照）
         int lifeDamage = 1;
@@ -282,11 +315,14 @@ public class GameEndpoint {
             boolean isWinner = winners.contains(uid);
 
             int life = game.playerLives.getOrDefault(uid, game.initialLife);
-            if (!isWinner) {
-                // 敗者は常にライフを1減らす
-                life = life - 1;
-                if (life < 0) life = 0;
-            }
+
+            // ダメージは「敗北による1」+「ルール違反によるペナルティ」の合計で適用する
+            int damage = 0;
+            if (!isWinner) damage += 1; // 敗者は1ダメージ
+            if (penalties != null && penalties.containsKey(uid)) damage += penalties.get(uid);
+
+            life = life - damage;
+            if (life < 0) life = 0;
             game.playerLives.put(uid, life);
 
             boolean isDead = life <= 0;
@@ -315,13 +351,18 @@ public class GameEndpoint {
             int life = game.playerLives.getOrDefault(pr.userId, game.initialLife);
             boolean isDead = life <= 0;
             boolean isWinner = winners.contains(pr.userId);
-            infos.add(new AllPlayersResultMessage.PlayerResultInfo(
+                int pen = 0;
+                if (penalties != null && penalties.containsKey(pr.userId)) {
+                pen = penalties.get(pr.userId);
+                }
+                infos.add(new AllPlayersResultMessage.PlayerResultInfo(
                     pr.userId,
                     pr.number,
                     isWinner ? "WIN" : "LOSE",
                     life,
-                    isDead
-            ));
+                    isDead,
+                    pen
+                ));
         }
 
         AllPlayersResultMessage allMsg = new AllPlayersResultMessage(
@@ -420,8 +461,12 @@ public class GameEndpoint {
         synchronized (game) {
             if (userId != null) game.nextRoundReady.add(userId);
 
-            // 参加プレイヤー全員からの合図を待つ（players.size() を基準）
-            int expected = game.players.size();
+            // 参加プレイヤー全員からの合図を待つ（生存プレイヤー数を基準）
+            int expected = 0;
+            for (Map.Entry<String, Integer> e : game.playerLives.entrySet()) {
+                Integer lv = e.getValue();
+                if (lv != null && lv > 0) expected++;
+            }
             if (game.nextRoundReady.size() >= expected) {
                 // 次ラウンド開始
                 game.nextRoundReady.clear();

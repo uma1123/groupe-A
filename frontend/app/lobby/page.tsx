@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRoomContext } from "@/context/RoomContext"; // 追加
 import { ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RuleModal from "../components/RuleModal";
 import { useLobbyController } from "@/hooks/useLobbyContoroller";
 import SettingRuleModal from "../components/SettingRuleModal";
@@ -20,6 +20,10 @@ export default function LobbyPage() {
 
   const { createRoom, joinRoom } = useLobbyController();
 
+  const [mounted, setMounted] = useState(false);
+  // mounted フラグでクライアントのみレンダリングする値を制御
+  useEffect(() => setMounted(true), []);
+
   // ログアウト機能
   const handleLogout = () => {
     // 後で処理を書く（cookie削除など）
@@ -34,7 +38,7 @@ export default function LobbyPage() {
   // 設定確定時にコンテキストに保存
   const handleConfirmSettings = async (
     maxPlayers: number,
-    initialLife: number
+    initialLife: number,
   ) => {
     console.log("設定値:", { maxPlayers, initialLife });
     setShowGameSettings(false);
@@ -98,7 +102,8 @@ export default function LobbyPage() {
       {/*プレイヤー名表示*/}
       <div className="max-w-5xl mx-auto px-6 py-2">
         <p className="text-sm text-slate-400 font-mono">
-          &gt; プレイヤ―: <span className="text-red-400">{user}</span>
+          &gt; プレイヤ―:{" "}
+          <span className="text-red-400">{mounted && user}</span>
         </p>
       </div>
 

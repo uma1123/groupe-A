@@ -14,7 +14,7 @@ export const useRoomController = () => {
 
   useEffect(() => {
     // 他のプレイヤーが参加した時
-    gameWebSocket.on("PLAYER_JOINED", (data) => {
+    const offPlayerJoined = gameWebSocket.on("PLAYER_JOINED", (data) => {
       console.log("👤 プレイヤー参加:", data);
       if (data.newUser) {
         addPlayer(data.newUser);
@@ -22,7 +22,7 @@ export const useRoomController = () => {
     });
 
     // プレイヤーが退出した時
-    gameWebSocket.on("PLAYER_LEFT", (data) => {
+    const offPlayerLeft = gameWebSocket.on("PLAYER_LEFT", (data) => {
       console.log("👤 プレイヤー退出:", data);
       if (data.userId) {
         removePlayer(data.userId);
@@ -30,7 +30,7 @@ export const useRoomController = () => {
     });
 
     // ゲームサーバへの移動指示を受信
-    gameWebSocket.on("GO_TO_GAME_SERVER", (data) => {
+    const offGoToGame = gameWebSocket.on("GO_TO_GAME_SERVER", (data) => {
       // 重複実行防止
       if (isTransitioning.current) {
         console.log("⚠️ 既に遷移中です");
@@ -59,20 +59,20 @@ export const useRoomController = () => {
         if (gameWebSocket.isGameServerConnected()) {
           clearInterval(checkConnection);
 
-          // JOIN_GAME メッセージを送信
-          gameWebSocket.sendToGameServer({
-            type: "JOIN_GAME",
-            userId: user,
-            roomId: roomId,
-          });
+          // ゲーム画面へ遷移してから JOIN_GAME を送信する（ホストが開始メッセージを逃さないように）
+          console.log("🚀 ゲーム画面へ遷移（先）:", `/game/${roomId}`);
+          router.push(`/game/${roomId}`);
 
-          console.log("📤 JOIN_GAME 送信:", { userId: user, roomId });
-
-          // 少し待ってからゲーム画面へ遷移
+          // 少し待ってから JOIN_GAME を送信（ページ遷移後にハンドラが登録される想定）
+          // 300ms だと稀にハンドラ登録が間に合わないため余裕を持たせる
           setTimeout(() => {
-            console.log("🚀 ゲーム画面へ遷移:", `/game/${roomId}`);
-            router.push(`/game/${roomId}`);
-          }, 300);
+            gameWebSocket.sendToGameServer({
+              type: "JOIN_GAME",
+              userId: user,
+              roomId: roomId,
+            });
+            console.log("📤 JOIN_GAME 送信（遅延）:", { userId: user, roomId });
+          }, 800);
         }
 
         if (attempts >= maxAttempts) {
@@ -88,9 +88,9 @@ export const useRoomController = () => {
     });
 
     return () => {
-      gameWebSocket.off("PLAYER_JOINED");
-      gameWebSocket.off("PLAYER_LEFT");
-      gameWebSocket.off("GO_TO_GAME_SERVER");
+      offPlayerJoined();
+      offPlayerLeft();
+      offGoToGame();
     };
   }, [router, user, addPlayer, removePlayer]);
 
@@ -110,10 +110,15 @@ export const useRoomController = () => {
         userId: user!,
         roomId: roomId,
       });
-
+      // START_GAME はクライアント管理サーバへ送信する
+      gameWebSocket.sendToClientManage({
+        type: "START_GAME",
+        userId: user!,
+        roomId: roomId,
+      });
       console.log("📤 START_GAME 送信:", { userId: user, roomId });
     },
-    [user, isLoading]
+    [user, isLoading],
   );
 
   const leaveRoom = useCallback(() => {

@@ -58,6 +58,14 @@ export const PlayerCard = ({ player }: { player: Player }) => {
                 ))}
               </div>
             </div>
+            {/* ペナルティ表示（あれば右上に小さなバッジ） */}
+            {player.penalty && player.penalty > 0 && (
+              <div className="absolute top-2 right-2 z-20">
+                <div className="text-xs bg-red-700/90 text-white px-2 py-0.5 rounded font-bold">
+                  -{player.penalty}
+                </div>
+              </div>
+            )}
             <div className="absolute top-1 left-0 right-0 flex justify-center">
               <div
                 className={`text-white text-[12px] font-bold uppercase px-2 py-0.5 rounded-sm tracking-wider shadow-sm ${

@@ -18,6 +18,8 @@ export interface Player {
 
   // UI用（オプション）
   avatarColor?: string; // アバターの色（サーバーから来るデータに含まれない場合はUI側で計算するため任意項目に）
+  // このラウンドで受けたペナルティ（表示用、任意）
+  penalty?: number;
 }
 
 // 定数もここで管理

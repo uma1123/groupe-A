@@ -22,7 +22,7 @@ const TIMER_DURATION = 60;
 const initializePlayersFromServer = (
   playerNames: string[],
   initialLives: number,
-  currentUser: string
+  currentUser: string,
 ): Player[] => {
   return playerNames.map((name) => ({
     id: name,
@@ -120,7 +120,7 @@ export const useGameController = (roomId: string) => {
 
       gameWebSocket.send(message);
     },
-    [user, roomId]
+    [user, roomId],
   );
 
   const beginRoundStart = useCallback(() => {
@@ -165,113 +165,129 @@ export const useGameController = (roomId: string) => {
   // ★ WebSocket イベントハンドラ登録（サーバーからプレイヤー情報を取得）
   useEffect(() => {
     // ゲーム開始
-    gameWebSocket.on("GAME_START", (data: GameStartResponse) => {
-      console.log("🎮 ゲーム開始:", data);
+    const offGameStart = gameWebSocket.on(
+      "GAME_START",
+      (data: GameStartResponse) => {
+        console.log("🎮 ゲーム開始:", data);
 
-      // ★ サーバーからのプレイヤーリストを使用して初期化
-      if (data.players && Array.isArray(data.players) && user) {
-        console.log("📥 サーバーからのプレイヤーリスト:", data.players);
+        // ★ サーバーからのプレイヤーリストを使用して初期化
+        if (data.players && Array.isArray(data.players) && user) {
+          console.log("📥 サーバーからのプレイヤーリスト:", data.players);
 
-        const initializedPlayers = initializePlayersFromServer(
-          data.players,
-          data.initialLife || 3,
-          user
-        );
-        setPlayers(initializedPlayers);
-        console.log("👥 プレイヤー初期化完了:", initializedPlayers);
-      } else {
-        console.warn("⚠️ プレイヤーリストが受信されていません:", data);
-      }
+          const initializedPlayers = initializePlayersFromServer(
+            data.players,
+            data.initialLife || 3,
+            user,
+          );
+          setPlayers(initializedPlayers);
+          console.log("👥 プレイヤー初期化完了:", initializedPlayers);
+        } else {
+          console.warn("⚠️ プレイヤーリストが受信されていません:", data);
+        }
 
-      setTotalRounds(data.totalRounds);
-      setAvailableRules(data.availableRules || []);
-      setCurrentRule(data.firstRule as GameRule);
-      setRuleHistory([data.firstRule as GameRule]);
-      beginRoundStart();
-    });
+        setTotalRounds(data.totalRounds);
+        setAvailableRules(data.availableRules || []);
+        setCurrentRule(data.firstRule as GameRule);
+        setRuleHistory([data.firstRule as GameRule]);
+        beginRoundStart();
+      },
+    );
 
     // ラウンド開始
-    gameWebSocket.on("ROUND_START", (data: RoundStartResponse) => {
-      console.log("🎬 ラウンド開始:", data);
-      // サーバーが送る totalRounds をここでも反映する
-      setTotalRounds(data.totalRounds);
-      setCurrentRound(data.currentRound);
-      setCurrentRule(data.rule as GameRule);
-      setRuleHistory((prev) => [...prev, data.rule as GameRule]);
-      setTimeRemaining(data.timerDuration);
-      // 送信/待機フラグをリセットして新ラウンドへ
-      setIsSubmitted(false);
-      setIsLoading(false);
-      setWaitingForOthers(false);
-      setShowRoundResult(false);
-      beginRoundStart();
-    });
+    const offRoundStart = gameWebSocket.on(
+      "ROUND_START",
+      (data: RoundStartResponse) => {
+        console.log("🎬 ラウンド開始:", data);
+        // サーバーが送る totalRounds をここでも反映する
+        setTotalRounds(data.totalRounds);
+        setCurrentRound(data.currentRound);
+        setCurrentRule(data.rule as GameRule);
+        setRuleHistory((prev) => [...prev, data.rule as GameRule]);
+        setTimeRemaining(data.timerDuration);
+        // 送信/待機フラグをリセットして新ラウンドへ
+        setIsSubmitted(false);
+        setIsLoading(false);
+        setWaitingForOthers(false);
+        setShowRoundResult(false);
+        beginRoundStart();
+      },
+    );
 
     // ラウンド結果
-    gameWebSocket.on("ROUND_RESULT", (data: RoundResultResponse) => {
-      console.log("📊 ラウンド結果:", data);
-      setWaitingForOthers(false);
-      setShowRoundResult(true);
-      setGameResult(data.roundResult === "WIN" ? "WIN" : "LOSE");
-      setRoundResults((prev) => [
-        ...prev,
-        data.roundResult === "WIN" ? "WIN" : "LOSE",
-      ]);
-      setTargetValue(data.targetValue);
+    const offRoundResult = gameWebSocket.on(
+      "ROUND_RESULT",
+      (data: RoundResultResponse) => {
+        console.log("📊 ラウンド結果:", data);
+        setWaitingForOthers(false);
+        setShowRoundResult(true);
+        setGameResult(data.roundResult === "WIN" ? "WIN" : "LOSE");
+        setRoundResults((prev) => [
+          ...prev,
+          data.roundResult === "WIN" ? "WIN" : "LOSE",
+        ]);
+        setTargetValue(data.targetValue);
 
-      setPlayers((prev) =>
-        prev.map((p) => {
-          if (p.isYou) {
-            return {
-              ...p,
-              lives: data.newLife,
-              status: data.isDead ? "dead" : "alive",
-              choice: data.yourNumber,
-            };
-          }
-          return p;
-        })
-      );
+        setPlayers((prev) =>
+          prev.map((p) => {
+            if (p.isYou) {
+              return {
+                ...p,
+                lives: data.newLife,
+                status: data.isDead ? "dead" : "alive",
+                choice: data.yourNumber,
+              };
+            }
+            return p;
+          }),
+        );
 
-      setIsLoading(false);
-    });
+        setIsLoading(false);
+      },
+    );
 
     // 全員の結果
-    gameWebSocket.on("ALL_PLAYERS_RESULT", (data: AllPlayersResultResponse) => {
-      console.log("📊 全員の結果:", data);
+    const offAllPlayersResult = gameWebSocket.on(
+      "ALL_PLAYERS_RESULT",
+      (data: AllPlayersResultResponse) => {
+        console.log("📊 全員の結果:", data);
 
-      setAverage(data.average); // ★ 平均値を保存
-      setTargetValue(data.targetValue);
+        setAverage(data.average); // ★ 平均値を保存
+        setTargetValue(data.targetValue);
 
-      setPlayers((prev) =>
-        prev.map((p) => {
-          const result = data.results.find((r) => r.userId === p.name);
-          if (result) {
-            return {
-              ...p,
-              lives: result.lives,
-              status: result.isDead ? "dead" : "alive",
-              choice: result.number,
-            };
-          }
-          return p;
-        })
-      );
-    });
+        setPlayers((prev) =>
+          prev.map((p) => {
+            const result = data.results.find((r) => r.userId === p.name);
+            if (result) {
+              return {
+                ...p,
+                lives: result.lives,
+                status: result.isDead ? "dead" : "alive",
+                choice: result.number,
+                penalty: result.penalty || 0,
+              };
+            }
+            return p;
+          }),
+        );
+      },
+    );
 
     // 最終結果
-    gameWebSocket.on("FINAL_RESULT", (data: FinalResultResponse) => {
-      console.log("🏆 最終結果:", data);
-      setGameResult(data.isWinner ? "WIN" : "LOSE");
-      setShowFinalResult(true);
-    });
+    const offFinalResult = gameWebSocket.on(
+      "FINAL_RESULT",
+      (data: FinalResultResponse) => {
+        console.log("🏆 最終結果:", data);
+        setGameResult(data.isWinner ? "WIN" : "LOSE");
+        setShowFinalResult(true);
+      },
+    );
 
     return () => {
-      gameWebSocket.off("GAME_START");
-      gameWebSocket.off("ROUND_START");
-      gameWebSocket.off("ROUND_RESULT");
-      gameWebSocket.off("ALL_PLAYERS_RESULT");
-      gameWebSocket.off("FINAL_RESULT");
+      offGameStart();
+      offRoundStart();
+      offRoundResult();
+      offAllPlayersResult();
+      offFinalResult();
     };
   }, [user, initialLife, beginRoundStart]);
 

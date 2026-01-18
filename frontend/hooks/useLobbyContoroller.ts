@@ -19,74 +19,69 @@ export const useLobbyController = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // ルーム作成成功
-    gameWebSocket.on(
+    // グローバルなハンドラは個別解除関数を使って登録／解除する
+    const offCreate = gameWebSocket.on(
       "CREATE_ROOM_SUCCESS",
       (data: CreateRoomSuccessResponse) => {
-        console.log("✅ ルーム作成成功:", data);
+        console.log("✅ ルーム作成成功 (global handler):", data);
         setIsLoading(false);
 
-        // サーバーからの設定情報を保存
         const maxPlayers = data.maxPlayers;
         const lives = data.lives;
-
         if (maxPlayers && lives) {
           setRoomSettings(maxPlayers, lives);
         }
 
-        // 自分をプレイヤーリストに追加
-        if (user) {
-          setPlayers([user]);
+        if (user) setPlayers([user]);
+        router.push(`/room/${data.roomId}`);
+      },
+    );
+
+    const offJoin = gameWebSocket.on(
+      "JOIN_ROOM_SUCCESS",
+      (data: JoinRoomSuccessResponse) => {
+        console.log("✅ ルーム参加成功 (global handler):", data);
+        setIsLoading(false);
+
+        if (data.maxPlayers && data.lives) {
+          setRoomSettings(data.maxPlayers, data.lives);
+          console.log("📋 ルーム設定を適用:", {
+            maxPlayers: data.maxPlayers,
+            lives: data.lives,
+          });
+        }
+
+        if (data.currentPlayers) {
+          setPlayers(data.currentPlayers);
+        } else if (user) {
+          addPlayer(user);
         }
 
         router.push(`/room/${data.roomId}`);
-      }
+      },
     );
 
-    // ルーム参加成功
-    gameWebSocket.on("JOIN_ROOM_SUCCESS", (data: JoinRoomSuccessResponse) => {
-      console.log("✅ ルーム参加成功:", data);
-      setIsLoading(false);
-
-      // ★ サーバーからの設定情報を保存
-      if (data.maxPlayers && data.lives) {
-        setRoomSettings(data.maxPlayers, data.lives);
-        console.log("📋 ルーム設定を適用:", {
-          maxPlayers: data.maxPlayers,
-          lives: data.lives,
-        });
-      }
-
-      // プレイヤーリストを設定
-      if (data.currentPlayers) {
-        setPlayers(data.currentPlayers);
-      } else if (user) {
-        addPlayer(user);
-      }
-
-      router.push(`/room/${data.roomId}`);
-    });
-
-    // エラーハンドラ
-    gameWebSocket.on("ERROR", (data: ErrorResponse) => {
+    const offError = gameWebSocket.on("ERROR", (data: ErrorResponse) => {
       console.error("❌ エラー:", data);
       setError(data.message);
       setIsLoading(false);
     });
 
     return () => {
-      gameWebSocket.off("CREATE_ROOM_SUCCESS");
-      gameWebSocket.off("JOIN_ROOM_SUCCESS");
-      gameWebSocket.off("ERROR");
+      offCreate();
+      offJoin();
+      offError();
     };
   }, [router, user, setRoomSettings, setPlayers, addPlayer]);
 
-  // ルーム作成処理
-  const createRoom = async (maxPlayers: number, initialLife: number) => {
+  // ルーム作成処理（Promiseで応答を待てる）
+  const createRoom = async (
+    maxPlayers: number,
+    initialLife: number,
+  ): Promise<CreateRoomSuccessResponse | ErrorResponse | null> => {
     setIsLoading(true);
     setError("");
 
-    // 事前にルーム設定を保存（レスポンスに含まれない場合の保険）
     setRoomSettings(maxPlayers, initialLife);
 
     const message: CreateRoomMessage = {
@@ -96,7 +91,28 @@ export const useLobbyController = () => {
       numOfLife: initialLife,
     };
 
-    gameWebSocket.send(message);
+    return new Promise((resolve) => {
+      const offSuccess = gameWebSocket.on(
+        "CREATE_ROOM_SUCCESS",
+        (data: CreateRoomSuccessResponse) => {
+          setIsLoading(false);
+          if (user) setPlayers([user]);
+          offSuccess();
+          offErr();
+          resolve(data);
+        },
+      );
+
+      const offErr = gameWebSocket.on("ERROR", (err: ErrorResponse) => {
+        setIsLoading(false);
+        setError(err.message);
+        offSuccess();
+        offErr();
+        resolve(err);
+      });
+
+      gameWebSocket.sendToClientManage(message);
+    });
   };
 
   // ルーム参加処理
@@ -115,7 +131,7 @@ export const useLobbyController = () => {
       roomId: Number(roomId),
     };
 
-    gameWebSocket.send(message);
+    gameWebSocket.sendToClientManage(message);
   };
 
   return { isLoading, error, createRoom, joinRoom };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Users, Timer, Target, User, RotateCcw, Shuffle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -39,6 +39,17 @@ export default function GamePage() {
 
   const [selectedNumber, setSelectedNumber] = useState("");
   const alivePlayers = players.filter((p) => p.status === "alive").length;
+
+  // 表示用の並び替え: YOU を常に先頭にする
+  const orderedPlayers = useMemo(() => {
+    const visible = players.slice();
+    const youIdx = visible.findIndex((p) => p.isYou);
+    if (youIdx > 0) {
+      const you = visible.splice(youIdx, 1)[0];
+      return [you, ...visible];
+    }
+    return visible;
+  }, [players]);
 
   const handleSubmit = () => {
     if (!selectedNumber) return;
@@ -243,14 +254,14 @@ export default function GamePage() {
                 {players.filter((p) => p.status !== "empty").length > 0 ? (
                   <>
                     <div className="grid grid-cols-5 gap-3">
-                      {players.slice(0, 5).map((player) => (
+                      {orderedPlayers.slice(0, 5).map((player) => (
                         <PlayerCard key={player.id} player={player} />
                       ))}
                     </div>
-                    {players.length > 5 && (
+                    {orderedPlayers.length > 5 && (
                       <div className="grid grid-cols-5 gap-3">
                         <div></div>
-                        {players.slice(5, 9).map((player) => (
+                        {orderedPlayers.slice(5, 9).map((player) => (
                           <PlayerCard key={player.id} player={player} />
                         ))}
                       </div>

@@ -26,14 +26,16 @@ public class AllPlayersResultMessage {
         public String result; // "WIN" | "LOSE" | "DRAW"
         public int lives;
         public boolean isDead;
+        public int penalty; // 追加: このラウンドで受けたペナルティ量
 
         public PlayerResultInfo(String userId, int number, String result,
-                                int lives, boolean isDead) {
+                                int lives, boolean isDead, int penalty) {
             this.userId = userId;
             this.number = number;
             this.result = result;
             this.lives = lives;
             this.isDead = isDead;
+            this.penalty = penalty;
         }
     }
 }

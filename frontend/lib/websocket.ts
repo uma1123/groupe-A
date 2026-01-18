@@ -4,7 +4,8 @@ export class GameWebSocket {
   private clientManageSocket: WebSocket | null = null;
   private gameSocket: WebSocket | null = null;
   private activeSocket: WebSocket | null = null;
-  private handlers: Map<string, (data: ServerResponse) => void> = new Map();
+  private handlers: Map<string, Set<(data: ServerResponse) => void>> =
+    new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
@@ -72,9 +73,15 @@ export class GameWebSocket {
       //   ...
       // }
 
-      const handler = this.handlers.get(message.type);
-      if (handler) {
-        handler(message);
+      const set = this.handlers.get(message.type);
+      if (set && set.size > 0) {
+        set.forEach((h) => {
+          try {
+            h(message);
+          } catch (e) {
+            console.error("ハンドラ実行エラー:", e);
+          }
+        });
       } else {
         console.warn("⚠️ 未処理メッセージ:", message.type);
       }
@@ -100,7 +107,7 @@ export class GameWebSocket {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(
-        `🔄 再接続試行 (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectDelay}ms`
+        `🔄 再接続試行 (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectDelay}ms`,
       );
       setTimeout(() => this.connect(this.url), this.reconnectDelay);
     } else {
@@ -242,9 +249,15 @@ export class GameWebSocket {
 
       if (response) {
         console.log("📥 モック受信:", response.type, response);
-        const handler = this.handlers.get(response.type);
-        if (handler) {
-          handler(response);
+        const set = this.handlers.get(response.type);
+        if (set && set.size > 0) {
+          set.forEach((h) => {
+            try {
+              h(response);
+            } catch (e) {
+              console.error("モックハンドラ実行エラー:", e);
+            }
+          });
         }
       }
     }, 500);
@@ -265,7 +278,7 @@ export class GameWebSocket {
       console.log(
         `📤 送信 (${this.currentMode || "UNKNOWN"})`,
         message.type,
-        message
+        message,
       );
     } else {
       console.error("❌ WebSocket未接続:", this.getReadyStateString(), message);
@@ -277,10 +290,25 @@ export class GameWebSocket {
    */
   on<T extends ServerResponse["type"]>(
     type: T,
-    handler: (data: Extract<ServerResponse, { type: T }>) => void
-  ): void {
-    this.handlers.set(type, handler as (data: ServerResponse) => void);
+    handler: (data: Extract<ServerResponse, { type: T }>) => void,
+  ): () => void {
+    const h = handler as (data: ServerResponse) => void;
+    let set = this.handlers.get(type);
+    if (!set) {
+      set = new Set();
+      this.handlers.set(type, set);
+    }
+    set.add(h);
     console.log("📌 ハンドラ登録:", type);
+    // 解除関数を返す
+    return () => {
+      const s = this.handlers.get(type);
+      if (s) {
+        s.delete(h);
+        if (s.size === 0) this.handlers.delete(type);
+      }
+      console.log("📌 ハンドラ解除(個別):", type);
+    };
   }
 
   /**
@@ -367,7 +395,7 @@ export class GameWebSocket {
       console.log(
         `🔌 WebSocket切断 (${this.currentMode}):`,
         event.code,
-        event.reason
+        event.reason,
       );
     };
   }
@@ -376,7 +404,7 @@ export class GameWebSocket {
    * クライアント管理サーバに接続
    */
   connectToClientManage(
-    url: string = "ws://localhost:8080/app/client-manage"
+    url: string = "ws://localhost:8080/app/client-manage",
   ): void {
     console.log("🔌 クライアント管理サーバに接続:", url);
     this.currentMode = "CLIENT_MANAGE";
@@ -417,9 +445,15 @@ export class GameWebSocket {
         console.log("📥 受信 (GAME):", data.type, data);
 
         // ハンドラを呼び出し
-        const handler = this.handlers.get(data.type);
-        if (handler) {
-          handler(data);
+        const set = this.handlers.get(data.type);
+        if (set && set.size > 0) {
+          set.forEach((h) => {
+            try {
+              h(data);
+            } catch (e) {
+              console.error("ハンドラ実行エラー:", e);
+            }
+          });
         }
       } catch (e) {
         console.error("メッセージ解析エラー:", e);
@@ -452,6 +486,19 @@ export class GameWebSocket {
       this.gameSocket.send(json);
     } else {
       console.error("❌ ゲームサーバ未接続");
+    }
+  }
+
+  /**
+   * クライアント管理サーバにメッセージ送信
+   */
+  sendToClientManage(message: ClientMessage): void {
+    if (this.clientManageSocket?.readyState === WebSocket.OPEN) {
+      const json = JSON.stringify(message);
+      console.log("📤 送信 (CLIENT_MANAGE):", message);
+      this.clientManageSocket.send(json);
+    } else {
+      console.error("❌ クライアント管理サーバ未接続", message);
     }
   }
 
