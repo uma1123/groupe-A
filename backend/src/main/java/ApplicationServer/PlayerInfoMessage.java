@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class PlayerInfoMessage extends ApplicationEndpoint.BaseMessage{
+public class PlayerInfoMessage {
     int roomid;
     String userid;
 

@@ -1,3 +1,4 @@
+/*
 package ClientManageServer;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -78,3 +79,4 @@ class BaseMessageTest {
         assertEquals("Unknown action: CHAT", result);
     }
 }
+*/

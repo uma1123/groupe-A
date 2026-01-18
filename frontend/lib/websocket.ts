@@ -22,8 +22,9 @@ export class GameWebSocket {
 
   /**
    * WebSocket接続を確立（互換性維持用）
+   * ★ デフォルトURLを修正
    */
-  connect(url: string = "ws://localhost:8080/app/sample"): void {
+  connect(url: string = "ws://localhost:8080/app/client-manage"): void {
     this.url = url;
 
     if (this.mockMode) {
@@ -66,17 +67,10 @@ export class GameWebSocket {
       const message = JSON.parse(messageStr) as ServerResponse;
       console.log("📥 受信:", message.type, message);
 
-      // GO_TO_GAME_SERVER は特別な処理
-      if (message.type === "GO_TO_GAME_SERVER") {
-        const gameServerMessage = message as Extract<
-          ServerResponse,
-          { type: "GO_TO_GAME_SERVER" }
-        >;
-        console.log("🚀 ゲームサーバへ移動:", gameServerMessage.nextEndpoint);
-        this.disconnectClientManage();
-        this.connectToGameServer(gameServerMessage.nextEndpoint);
-        return;
-      }
+      // ★ GO_TO_GAME_SERVER の自動処理を削除（ハンドラに任せる）
+      // if (message.type === "GO_TO_GAME_SERVER") {
+      //   ...
+      // }
 
       const handler = this.handlers.get(message.type);
       if (handler) {
@@ -153,10 +147,8 @@ export class GameWebSocket {
           response = {
             type: "CREATE_ROOM_SUCCESS",
             roomId: Math.floor(1000 + Math.random() * 9000).toString(),
-            settings: {
-              maxPlayers: createMsg.numOfPlayer,
-              lives: createMsg.numOfLife,
-            },
+            maxPlayers: createMsg.numOfPlayer,
+            lives: createMsg.numOfLife,
           };
           break;
         }
@@ -166,10 +158,25 @@ export class GameWebSocket {
             ClientMessage,
             { type: "JOIN_ROOM" }
           >;
+          // ★ モックでは固定値を返す（実際はサーバーから取得）
           response = {
             type: "JOIN_ROOM_SUCCESS",
             roomId: joinMsg.roomId.toString(),
             currentPlayers: ["Player1", joinMsg.userId],
+            maxPlayers: 4, // ★ 修正: 固定値（モック用）
+            lives: 3, // ★ 修正: 固定値（モック用）
+          };
+          break;
+        }
+
+        case "LEAVE_ROOM": {
+          const leaveMsg = message as Extract<
+            ClientMessage,
+            { type: "LEAVE_ROOM" }
+          >;
+          response = {
+            type: "PLAYER_LEFT",
+            userId: leaveMsg.userId,
           };
           break;
         }
@@ -340,6 +347,32 @@ export class GameWebSocket {
   }
 
   /**
+   * WebSocketのイベントハンドラを設定
+   */
+  private setupSocketHandlers(socket: WebSocket): void {
+    socket.onopen = (): void => {
+      console.log(`✅ WebSocket接続成功 (${this.currentMode})`);
+      this.reconnectAttempts = 0;
+    };
+
+    socket.onmessage = (event: MessageEvent<string>): void => {
+      this.handleMessage(event.data);
+    };
+
+    socket.onerror = (): void => {
+      console.error(`❌ WebSocketエラー (${this.currentMode})`);
+    };
+
+    socket.onclose = (event: CloseEvent): void => {
+      console.log(
+        `🔌 WebSocket切断 (${this.currentMode}):`,
+        event.code,
+        event.reason
+      );
+    };
+  }
+
+  /**
    * クライアント管理サーバに接続
    */
   connectToClientManage(
@@ -361,48 +394,69 @@ export class GameWebSocket {
   }
 
   /**
-   * アプリケーションサーバに接続
+   * ゲームサーバに接続
    */
-  connectToGameServer(url: string = "ws://localhost:8081/app/game"): void {
+  connectToGameServer(url: string): void {
     console.log("🎮 アプリケーションサーバに接続:", url);
-    this.currentMode = "GAME";
-    this.url = url;
 
-    if (this.mockMode) {
-      console.log("🧪 モックモードで動作中");
-      return;
+    // 既存の接続があれば閉じる
+    if (this.gameSocket) {
+      this.gameSocket.close();
     }
 
     this.gameSocket = new WebSocket(url);
-    this.activeSocket = this.gameSocket;
 
-    this.setupSocketHandlers(this.gameSocket);
+    this.gameSocket.onopen = () => {
+      console.log("✅ WebSocket接続成功 (GAME)");
+      this.activeSocket = this.gameSocket;
+    };
+
+    this.gameSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as ServerResponse;
+        console.log("📥 受信 (GAME):", data.type, data);
+
+        // ハンドラを呼び出し
+        const handler = this.handlers.get(data.type);
+        if (handler) {
+          handler(data);
+        }
+      } catch (e) {
+        console.error("メッセージ解析エラー:", e);
+      }
+    };
+
+    this.gameSocket.onerror = (error) => {
+      console.error("❌ WebSocketエラー (GAME):", error);
+    };
+
+    this.gameSocket.onclose = (event) => {
+      console.log("🔌 WebSocket切断 (GAME)", event.code);
+    };
   }
 
   /**
-   * WebSocketハンドラの共通設定
+   * ゲームサーバが接続済みか確認
    */
-  private setupSocketHandlers(socket: WebSocket): void {
-    socket.onopen = (): void => {
-      console.log(`✅ WebSocket接続成功 (${this.currentMode})`);
-      this.reconnectAttempts = 0;
-    };
-
-    socket.onmessage = (event: MessageEvent<string>): void => {
-      this.handleMessage(event.data);
-    };
-
-    socket.onerror = (): void => {
-      console.error(`❌ WebSocketエラー (${this.currentMode})`);
-    };
-
-    socket.onclose = (event: CloseEvent): void => {
-      console.log(`🔌 WebSocket切断 (${this.currentMode})`, event.code);
-    };
+  isGameServerConnected(): boolean {
+    return this.gameSocket?.readyState === WebSocket.OPEN;
   }
 
   /**
-   * クライアント管理サーバのみ切断
+   * ゲームサーバにメッセージ送信
+   */
+  sendToGameServer(message: object): void {
+    if (this.gameSocket?.readyState === WebSocket.OPEN) {
+      const json = JSON.stringify(message);
+      console.log("📤 送信 (GAME):", message);
+      this.gameSocket.send(json);
+    } else {
+      console.error("❌ ゲームサーバ未接続");
+    }
+  }
+
+  /**
+   * クライアント管理サーバを切断
    */
   disconnectClientManage(): void {
     if (this.clientManageSocket) {

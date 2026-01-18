@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class NumberMessage extends ApplicationEndpoint.BaseMessage{
+public class NumberMessage {
     String userid;
     int roomid;
     int num;
@@ -9,5 +9,13 @@ public class NumberMessage extends ApplicationEndpoint.BaseMessage{
         this.userid = userid;
         this.roomid = roomid;
         this.num = num;
+    }
+    @Override
+    public String toString() {
+        return "NumberMessage{" +
+                "userid='" + userid + '\'' +
+                ", roomid=" + roomid +
+                ", num=" + num +
+                '}';
     }
 }

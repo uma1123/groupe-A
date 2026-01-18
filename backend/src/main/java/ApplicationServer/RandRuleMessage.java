@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class RandRuleMessage extends ApplicationEndpoint.BaseMessage{
+public class RandRuleMessage {
     int roomid;
     String ruledetail;
 

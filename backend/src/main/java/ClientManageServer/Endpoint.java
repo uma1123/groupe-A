@@ -1,3 +1,4 @@
+/*削除予定(1/15)
 package ClientManageServer;
 
 import com.google.gson.Gson;
@@ -92,3 +93,4 @@ public class Endpoint {
         }
     }
 }
+*/

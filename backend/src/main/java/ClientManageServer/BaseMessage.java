@@ -1,3 +1,4 @@
+/* 削除予定（1/15）
 package ClientManageServer;
 
 import java.util.ArrayList;
@@ -126,3 +127,4 @@ class TransitionMessage extends BaseMessage {
             return userId;
         }
     }
+*/

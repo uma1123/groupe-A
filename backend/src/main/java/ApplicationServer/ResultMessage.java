@@ -1,6 +1,6 @@
 package ApplicationServer;
 
-public class ResultMessage extends ApplicationEndpoint.BaseMessage{
+public class ResultMessage {
     int roomid;
     String userid;
     Boolean result;

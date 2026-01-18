@@ -1,3 +1,4 @@
+/*削除予定(1/15)
 package ClientManageServer;
 
 public class Message {
@@ -21,3 +22,4 @@ public class Message {
     public int getNumOfLife() { return numOfLife; }
     public String getPassword(){return password;}
 }
+*/

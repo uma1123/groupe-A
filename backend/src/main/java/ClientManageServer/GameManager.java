@@ -1,7 +1,8 @@
+/* 削除予定
 package ClientManageServer;
 
 public class GameManager {
-    private roomService service = new roomService();
+    private RoomService service = new RoomService();
     private AccountManager account = new AccountManager();
 
     public String handleAction(BaseMessage msg) {
@@ -53,3 +54,4 @@ public class GameManager {
         return "Unknown action: " + type;
     }
 }
+*/

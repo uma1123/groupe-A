@@ -1,7 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Player, DEFAULT_TARGET_VALUE } from "@/types/game";
-import { makeMockPlayers } from "@/lib/gameMockData";
 import { useAuth } from "@/context/AuthContext";
 import type { GameRule } from "@/types/randomRule";
 import { useRoomContext } from "@/context/RoomContext";
@@ -19,29 +18,50 @@ import { gameWebSocket } from "@/lib/websocket";
 
 const TIMER_DURATION = 60;
 
-const initializePlayers = (
-  username: string,
-  maxNum: number,
-  initialLives: number
-) => {
-  const base = makeMockPlayers(username || "Player 1");
-  return base.map((p, i) => {
-    if (i < maxNum) {
-      return { ...p, lives: initialLives, status: "alive" as const };
-    }
-    return { ...p, lives: 0, status: "empty" as const };
-  });
+// ★ makeMockPlayers を削除し、プレイヤーを初期化する関数に変更
+const initializePlayersFromServer = (
+  playerNames: string[],
+  initialLives: number,
+  currentUser: string
+): Player[] => {
+  return playerNames.map((name) => ({
+    id: name,
+    name: name, // ★ サーバーから取得した名前
+    lives: initialLives,
+    status: "alive" as const,
+    isYou: name === currentUser, // ★ 自分かどうかを判定
+    isHost: false,
+    isReady: false,
+    choice: null,
+  }));
+};
+
+// ★ 空の初期状態
+const initializeEmptyPlayers = (maxNum: number): Player[] => {
+  return Array.from({ length: maxNum }, (_, i) => ({
+    id: `empty-${i}`,
+    name: "",
+    lives: 0,
+    status: "empty" as const,
+    isYou: false,
+    isHost: false,
+    isReady: false,
+    choice: null,
+  }));
 };
 
 export const useGameController = (roomId: string) => {
   const router = useRouter();
   const { user } = useAuth();
-  const { maxPlayers, initialLife } = useRoomContext();
+  const { maxPlayers, initialLife, players: roomPlayers } = useRoomContext();
 
-  // ✅ 初期値を直接設定（setState 不要）
-  const [players, setPlayers] = useState<Player[]>(() =>
-    initializePlayers(user || "Player 1", maxPlayers, initialLife)
-  );
+  // ✅ RoomContext のプレイヤー情報を使って初期化（GAME_START 前でも表示可能）
+  const [players, setPlayers] = useState<Player[]>(() => {
+    if (roomPlayers && roomPlayers.length > 0 && user) {
+      return initializePlayersFromServer(roomPlayers, initialLife || 3, user);
+    }
+    return initializeEmptyPlayers(maxPlayers || 4);
+  });
 
   // --- State ---
   const [isLoading, setIsLoading] = useState(false);
@@ -66,21 +86,24 @@ export const useGameController = (roomId: string) => {
   const [availableRules, setAvailableRules] = useState<RuleData[]>([]);
   const [ruleHistory, setRuleHistory] = useState<GameRule[]>([]);
 
+  const [average, setAverage] = useState<number | undefined>(undefined);
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const roundStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ✅ タイマーのクリーンアップ
   useEffect(() => {
+    const timer = timerRef.current;
+    const countdown = countdownRef.current;
+    const roundStartTimeout = roundStartTimeoutRef.current;
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      if (roundStartTimeoutRef.current)
-        clearTimeout(roundStartTimeoutRef.current);
+      if (timer) clearTimeout(timer);
+      if (countdown) clearInterval(countdown);
+      if (roundStartTimeout) clearTimeout(roundStartTimeout);
     };
   }, []);
 
-  // ★ 関数宣言を最初に持ってくる（useEffect より前）
   const submitNumber = useCallback(
     (number: number) => {
       setIsLoading(true);
@@ -115,7 +138,7 @@ export const useGameController = (roomId: string) => {
     }, 1500);
   }, []);
 
-  // ✅ タイマーカウントダウン（submitNumber を使用）
+  // ✅ タイマーカウントダウン
   useEffect(() => {
     if (isTimerRunning && timeRemaining > 0) {
       countdownRef.current = setInterval(() => {
@@ -123,7 +146,7 @@ export const useGameController = (roomId: string) => {
           if (prev <= 1) {
             setIsTimerRunning(false);
             if (!isSubmitted) {
-              submitNumber(0); // ✅ ここで呼び出せる
+              submitNumber(0);
             }
             return 0;
           }
@@ -139,26 +162,49 @@ export const useGameController = (roomId: string) => {
     };
   }, [isTimerRunning, timeRemaining, isSubmitted, submitNumber]);
 
-  // ★ WebSocket イベントハンドラ登録（beginRoundStart を使用）
+  // ★ WebSocket イベントハンドラ登録（サーバーからプレイヤー情報を取得）
   useEffect(() => {
     // ゲーム開始
     gameWebSocket.on("GAME_START", (data: GameStartResponse) => {
       console.log("🎮 ゲーム開始:", data);
+
+      // ★ サーバーからのプレイヤーリストを使用して初期化
+      if (data.players && Array.isArray(data.players) && user) {
+        console.log("📥 サーバーからのプレイヤーリスト:", data.players);
+
+        const initializedPlayers = initializePlayersFromServer(
+          data.players,
+          data.initialLife || 3,
+          user
+        );
+        setPlayers(initializedPlayers);
+        console.log("👥 プレイヤー初期化完了:", initializedPlayers);
+      } else {
+        console.warn("⚠️ プレイヤーリストが受信されていません:", data);
+      }
+
       setTotalRounds(data.totalRounds);
-      setAvailableRules(data.availableRules);
+      setAvailableRules(data.availableRules || []);
       setCurrentRule(data.firstRule as GameRule);
       setRuleHistory([data.firstRule as GameRule]);
-      beginRoundStart(); // ✅ ここで呼び出せる
+      beginRoundStart();
     });
 
     // ラウンド開始
     gameWebSocket.on("ROUND_START", (data: RoundStartResponse) => {
       console.log("🎬 ラウンド開始:", data);
+      // サーバーが送る totalRounds をここでも反映する
+      setTotalRounds(data.totalRounds);
       setCurrentRound(data.currentRound);
       setCurrentRule(data.rule as GameRule);
       setRuleHistory((prev) => [...prev, data.rule as GameRule]);
       setTimeRemaining(data.timerDuration);
-      beginRoundStart(); // ✅ ここで呼び出せる
+      // 送信/待機フラグをリセットして新ラウンドへ
+      setIsSubmitted(false);
+      setIsLoading(false);
+      setWaitingForOthers(false);
+      setShowRoundResult(false);
+      beginRoundStart();
     });
 
     // ラウンド結果
@@ -193,6 +239,10 @@ export const useGameController = (roomId: string) => {
     // 全員の結果
     gameWebSocket.on("ALL_PLAYERS_RESULT", (data: AllPlayersResultResponse) => {
       console.log("📊 全員の結果:", data);
+
+      setAverage(data.average); // ★ 平均値を保存
+      setTargetValue(data.targetValue);
+
       setPlayers((prev) =>
         prev.map((p) => {
           const result = data.results.find((r) => r.userId === p.name);
@@ -223,7 +273,7 @@ export const useGameController = (roomId: string) => {
       gameWebSocket.off("ALL_PLAYERS_RESULT");
       gameWebSocket.off("FINAL_RESULT");
     };
-  }, [beginRoundStart]); // ✅ beginRoundStart を依存配列に追加
+  }, [user, initialLife, beginRoundStart]);
 
   const nextRound = useCallback(() => {
     const myPlayer = players.find((p) => p.isYou);
@@ -275,20 +325,14 @@ export const useGameController = (roomId: string) => {
     setShowFinalResult(false);
     setGameResult(null);
 
-    const base = makeMockPlayers(user || "Player 1");
-    const adjusted = base.map((p, i) => {
-      if (i < maxPlayers) {
-        return { ...p, lives: initialLife, status: "alive" as const };
-      }
-      return { ...p, lives: 0, status: "empty" as const };
-    });
-    setPlayers(adjusted);
+    // ★ 空の状態にリセット（次のゲーム開始時に再初期化）
+    setPlayers(initializeEmptyPlayers(maxPlayers || 4));
 
     setTargetValue(DEFAULT_TARGET_VALUE);
     setTimeRemaining(TIMER_DURATION);
     setIsTimerRunning(false);
     setShowRoundStart(false);
-  }, [user, maxPlayers, initialLife]);
+  }, [maxPlayers]);
 
   return {
     players,
@@ -309,6 +353,7 @@ export const useGameController = (roomId: string) => {
     showRoundResult,
     showFinalResult,
     gameResult,
+    average, // ★ 追加
     submitNumber,
     nextRound,
     exitGame,
