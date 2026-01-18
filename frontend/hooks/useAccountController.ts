@@ -20,27 +20,30 @@ export const useAccountController = () => {
     // クライアント管理サーバに接続
     gameWebSocket.connectToClientManage(
       process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
-        "ws://localhost:8080/client-manage"
+        "ws://localhost:8080/client-manage",
     );
 
     // 認証成功ハンドラ
-    gameWebSocket.on("AUTH_SUCCESS", (data: AuthSuccessResponse) => {
-      console.log("✅ 認証成功:", data);
-      setUser(data.userId);
-      setIsLoading(false);
-      router.push("/lobby");
-    });
+    const offAuth = gameWebSocket.on(
+      "AUTH_SUCCESS",
+      (data: AuthSuccessResponse) => {
+        console.log("✅ 認証成功:", data);
+        setUser(data.userId);
+        setIsLoading(false);
+        router.push("/lobby");
+      },
+    );
 
     // エラーハンドラ
-    gameWebSocket.on("ERROR", (data: ErrorResponse) => {
+    const offErr = gameWebSocket.on("ERROR", (data: ErrorResponse) => {
       console.error("❌ エラー:", data);
       setError(data.message);
       setIsLoading(false);
     });
 
     return () => {
-      gameWebSocket.off("AUTH_SUCCESS");
-      gameWebSocket.off("ERROR");
+      offAuth();
+      offErr();
     };
   }, [router, setUser]);
 

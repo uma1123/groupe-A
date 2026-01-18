@@ -4,7 +4,8 @@ export class GameWebSocket {
   private clientManageSocket: WebSocket | null = null;
   private gameSocket: WebSocket | null = null;
   private activeSocket: WebSocket | null = null;
-  private handlers: Map<string, (data: ServerResponse) => void> = new Map();
+  private handlers: Map<string, Set<(data: ServerResponse) => void>> =
+    new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
@@ -13,17 +14,17 @@ export class GameWebSocket {
   private currentMode: "CLIENT_MANAGE" | "GAME" | null = null;
 
   /**
-   * モックモードを有効化（Java側未実装時のテスト用）
+   * モックを有効化
    */
   enableMockMode(): void {
     this.mockMode = true;
-    console.log("🧪 モックモード有効化");
+    console.log(" モックモード有効化");
   }
 
   /**
-   * WebSocket接続を確立（互換性維持用）
+   * WebSocket接続を確立
    */
-  connect(url: string = "ws://localhost:8080/app/sample"): void {
+  connect(url: string = "ws://localhost:8080/app/client-manage"): void {
     this.url = url;
 
     if (this.mockMode) {
@@ -36,7 +37,7 @@ export class GameWebSocket {
       this.activeSocket = new WebSocket(url);
 
       this.activeSocket.onopen = (): void => {
-        console.log("✅ WebSocket接続成功:", url);
+        console.log(" WebSocket接続成功:", url);
         this.reconnectAttempts = 0;
       };
 
@@ -45,15 +46,15 @@ export class GameWebSocket {
       };
 
       this.activeSocket.onerror = (): void => {
-        console.error("❌ WebSocketエラー");
+        console.error(" WebSocketエラー");
       };
 
       this.activeSocket.onclose = (event: CloseEvent): void => {
-        console.log("🔌 WebSocket切断:", event.code, event.reason);
+        console.log(" WebSocket切断:", event.code, event.reason);
         this.attemptReconnect();
       };
     } catch (error) {
-      console.error("❌ WebSocket接続失敗:", error);
+      console.error(" WebSocket接続失敗:", error);
       this.attemptReconnect();
     }
   }
@@ -64,28 +65,22 @@ export class GameWebSocket {
   private handleMessage(messageStr: string): void {
     try {
       const message = JSON.parse(messageStr) as ServerResponse;
-      console.log("📥 受信:", message.type, message);
+      console.log(" 受信:", message.type, message);
 
-      // GO_TO_GAME_SERVER は特別な処理
-      if (message.type === "GO_TO_GAME_SERVER") {
-        const gameServerMessage = message as Extract<
-          ServerResponse,
-          { type: "GO_TO_GAME_SERVER" }
-        >;
-        console.log("🚀 ゲームサーバへ移動:", gameServerMessage.nextEndpoint);
-        this.disconnectClientManage();
-        this.connectToGameServer(gameServerMessage.nextEndpoint);
-        return;
-      }
-
-      const handler = this.handlers.get(message.type);
-      if (handler) {
-        handler(message);
+      const set = this.handlers.get(message.type);
+      if (set && set.size > 0) {
+        set.forEach((h) => {
+          try {
+            h(message);
+          } catch (e) {
+            console.error("ハンドラ実行エラー:", e);
+          }
+        });
       } else {
-        console.warn("⚠️ 未処理メッセージ:", message.type);
+        console.warn(" 未処理メッセージ:", message.type);
       }
     } catch (error) {
-      console.error("❌ メッセージ解析エラー:", error, messageStr);
+      console.error(" メッセージ解析エラー:", error, messageStr);
     }
   }
 
@@ -94,7 +89,7 @@ export class GameWebSocket {
    */
   private simulateConnection(): void {
     setTimeout(() => {
-      console.log("✅ モック接続成功");
+      console.log(" モック接続成功");
       this.reconnectAttempts = 0;
     }, 100);
   }
@@ -106,18 +101,18 @@ export class GameWebSocket {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(
-        `🔄 再接続試行 (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectDelay}ms`
+        ` 再接続試行 (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${this.reconnectDelay}ms`,
       );
       setTimeout(() => this.connect(this.url), this.reconnectDelay);
     } else {
-      console.error("❌ 再接続回数上限に達しました");
+      console.error(" 再接続回数上限に達しました");
     }
   }
 
   /**
    * モックレスポンスを生成
    */
-  private handleMockResponse(message: ClientMessage): void {
+  private handleResponse(message: ClientMessage): void {
     setTimeout(() => {
       let response: ServerResponse | null = null;
 
@@ -153,10 +148,8 @@ export class GameWebSocket {
           response = {
             type: "CREATE_ROOM_SUCCESS",
             roomId: Math.floor(1000 + Math.random() * 9000).toString(),
-            settings: {
-              maxPlayers: createMsg.numOfPlayer,
-              lives: createMsg.numOfLife,
-            },
+            maxPlayers: createMsg.numOfPlayer,
+            lives: createMsg.numOfLife,
           };
           break;
         }
@@ -170,6 +163,20 @@ export class GameWebSocket {
             type: "JOIN_ROOM_SUCCESS",
             roomId: joinMsg.roomId.toString(),
             currentPlayers: ["Player1", joinMsg.userId],
+            maxPlayers: 4,
+            lives: 3,
+          };
+          break;
+        }
+
+        case "LEAVE_ROOM": {
+          const leaveMsg = message as Extract<
+            ClientMessage,
+            { type: "LEAVE_ROOM" }
+          >;
+          response = {
+            type: "PLAYER_LEFT",
+            userId: leaveMsg.userId,
           };
           break;
         }
@@ -234,10 +241,16 @@ export class GameWebSocket {
       }
 
       if (response) {
-        console.log("📥 モック受信:", response.type, response);
-        const handler = this.handlers.get(response.type);
-        if (handler) {
-          handler(response);
+        console.log(" モック受信:", response.type, response);
+        const set = this.handlers.get(response.type);
+        if (set && set.size > 0) {
+          set.forEach((h) => {
+            try {
+              h(response);
+            } catch (e) {
+              console.error("モックハンドラ実行エラー:", e);
+            }
+          });
         }
       }
     }, 500);
@@ -248,20 +261,20 @@ export class GameWebSocket {
    */
   send(message: ClientMessage): void {
     if (this.mockMode) {
-      console.log("📤 モック送信:", message.type, message);
-      this.handleMockResponse(message);
+      console.log(" モック送信:", message.type, message);
+      this.handleResponse(message);
       return;
     }
 
     if (this.activeSocket?.readyState === WebSocket.OPEN) {
       this.activeSocket.send(JSON.stringify(message));
       console.log(
-        `📤 送信 (${this.currentMode || "UNKNOWN"})`,
+        ` 送信 (${this.currentMode || "UNKNOWN"})`,
         message.type,
-        message
+        message,
       );
     } else {
-      console.error("❌ WebSocket未接続:", this.getReadyStateString(), message);
+      console.error(" WebSocket未接続:", this.getReadyStateString(), message);
     }
   }
 
@@ -270,10 +283,25 @@ export class GameWebSocket {
    */
   on<T extends ServerResponse["type"]>(
     type: T,
-    handler: (data: Extract<ServerResponse, { type: T }>) => void
-  ): void {
-    this.handlers.set(type, handler as (data: ServerResponse) => void);
-    console.log("📌 ハンドラ登録:", type);
+    handler: (data: Extract<ServerResponse, { type: T }>) => void,
+  ): () => void {
+    const h = handler as (data: ServerResponse) => void;
+    let set = this.handlers.get(type);
+    if (!set) {
+      set = new Set();
+      this.handlers.set(type, set);
+    }
+    set.add(h);
+    console.log(" ハンドラ登録:", type);
+    // 解除関数を返す
+    return () => {
+      const s = this.handlers.get(type);
+      if (s) {
+        s.delete(h);
+        if (s.size === 0) this.handlers.delete(type);
+      }
+      console.log(" ハンドラ解除(個別):", type);
+    };
   }
 
   /**
@@ -281,7 +309,7 @@ export class GameWebSocket {
    */
   off(type: ServerResponse["type"]): void {
     this.handlers.delete(type);
-    console.log("📌 ハンドラ削除:", type);
+    console.log(" ハンドラ削除:", type);
   }
 
   /**
@@ -289,7 +317,7 @@ export class GameWebSocket {
    */
   clearHandlers(): void {
     this.handlers.clear();
-    console.log("🧹 全ハンドラクリア");
+    console.log(" 全ハンドラクリア");
   }
 
   /**
@@ -302,7 +330,7 @@ export class GameWebSocket {
     }
     this.clearHandlers();
     this.reconnectAttempts = this.maxReconnectAttempts;
-    console.log("🔌 WebSocket切断完了");
+    console.log(" WebSocket切断完了");
   }
 
   /**
@@ -340,17 +368,43 @@ export class GameWebSocket {
   }
 
   /**
+   * WebSocketのイベントハンドラを設定
+   */
+  private setupSocketHandlers(socket: WebSocket): void {
+    socket.onopen = (): void => {
+      console.log(` WebSocket接続成功 (${this.currentMode})`);
+      this.reconnectAttempts = 0;
+    };
+
+    socket.onmessage = (event: MessageEvent<string>): void => {
+      this.handleMessage(event.data);
+    };
+
+    socket.onerror = (): void => {
+      console.error(` WebSocketエラー (${this.currentMode})`);
+    };
+
+    socket.onclose = (event: CloseEvent): void => {
+      console.log(
+        ` WebSocket切断 (${this.currentMode}):`,
+        event.code,
+        event.reason,
+      );
+    };
+  }
+
+  /**
    * クライアント管理サーバに接続
    */
   connectToClientManage(
-    url: string = "ws://localhost:8080/app/client-manage"
+    url: string = "ws://localhost:8080/app/client-manage",
   ): void {
-    console.log("🔌 クライアント管理サーバに接続:", url);
+    console.log(" クライアント管理サーバに接続:", url);
     this.currentMode = "CLIENT_MANAGE";
     this.url = url;
 
     if (this.mockMode) {
-      console.log("🧪 モックモードで動作中");
+      console.log(" モックモードで動作中");
       return;
     }
 
@@ -361,54 +415,94 @@ export class GameWebSocket {
   }
 
   /**
-   * アプリケーションサーバに接続
+   * ゲームサーバに接続
    */
-  connectToGameServer(url: string = "ws://localhost:8081/app/game"): void {
-    console.log("🎮 アプリケーションサーバに接続:", url);
-    this.currentMode = "GAME";
-    this.url = url;
+  connectToGameServer(url: string): void {
+    console.log(" アプリケーションサーバに接続:", url);
 
-    if (this.mockMode) {
-      console.log("🧪 モックモードで動作中");
-      return;
+    // 既存の接続があれば閉じる
+    if (this.gameSocket) {
+      this.gameSocket.close();
     }
 
     this.gameSocket = new WebSocket(url);
-    this.activeSocket = this.gameSocket;
 
-    this.setupSocketHandlers(this.gameSocket);
+    this.gameSocket.onopen = () => {
+      console.log(" WebSocket接続成功 (GAME)");
+      this.activeSocket = this.gameSocket;
+    };
+
+    this.gameSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as ServerResponse;
+        console.log(" 受信 (GAME):", data.type, data);
+
+        // ハンドラを呼び出し
+        const set = this.handlers.get(data.type);
+        if (set && set.size > 0) {
+          set.forEach((h) => {
+            try {
+              h(data);
+            } catch (e) {
+              console.error("ハンドラ実行エラー:", e);
+            }
+          });
+        }
+      } catch (e) {
+        console.error("メッセージ解析エラー:", e);
+      }
+    };
+
+    this.gameSocket.onerror = (error) => {
+      console.error(" WebSocketエラー (GAME):", error);
+    };
+
+    this.gameSocket.onclose = (event) => {
+      console.log(" WebSocket切断 (GAME)", event.code);
+    };
   }
 
   /**
-   * WebSocketハンドラの共通設定
+   * ゲームサーバが接続済みか確認
    */
-  private setupSocketHandlers(socket: WebSocket): void {
-    socket.onopen = (): void => {
-      console.log(`✅ WebSocket接続成功 (${this.currentMode})`);
-      this.reconnectAttempts = 0;
-    };
-
-    socket.onmessage = (event: MessageEvent<string>): void => {
-      this.handleMessage(event.data);
-    };
-
-    socket.onerror = (): void => {
-      console.error(`❌ WebSocketエラー (${this.currentMode})`);
-    };
-
-    socket.onclose = (event: CloseEvent): void => {
-      console.log(`🔌 WebSocket切断 (${this.currentMode})`, event.code);
-    };
+  isGameServerConnected(): boolean {
+    return this.gameSocket?.readyState === WebSocket.OPEN;
   }
 
   /**
-   * クライアント管理サーバのみ切断
+   * ゲームサーバにメッセージ送信
+   */
+  sendToGameServer(message: object): void {
+    if (this.gameSocket?.readyState === WebSocket.OPEN) {
+      const json = JSON.stringify(message);
+      console.log(" 送信 (GAME):", message);
+      this.gameSocket.send(json);
+    } else {
+      console.error(" ゲームサーバ未接続");
+    }
+  }
+
+  /**
+   * クライアント管理サーバにメッセージ送信
+   */
+  sendToClientManage(message: ClientMessage): void {
+    if (this.clientManageSocket?.readyState === WebSocket.OPEN) {
+      const json = JSON.stringify(message);
+      console.log(" 送信 (CLIENT_MANAGE):", message);
+      this.clientManageSocket.send(json);
+    } else {
+      console.error(" クライアント管理サーバ未接続", message);
+    }
+  }
+
+  /**
+   * クライアント管理サーバを切断
    */
   disconnectClientManage(): void {
     if (this.clientManageSocket) {
       this.clientManageSocket.close();
       this.clientManageSocket = null;
-      console.log("🔌 クライアント管理サーバ切断");
+      console.log(" クライアント管理サーバ切断");
     }
   }
 
@@ -420,7 +514,7 @@ export class GameWebSocket {
     if (this.gameSocket) {
       this.gameSocket.close();
       this.gameSocket = null;
-      console.log("🔌 ゲームサーバ切断");
+      console.log(" ゲームサーバ切断");
     }
     this.activeSocket = null;
     this.currentMode = null;

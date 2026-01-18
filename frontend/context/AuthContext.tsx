@@ -1,5 +1,11 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { gameWebSocket } from "@/lib/websocket";
+import type {
+  LogoutMessage,
+  LogoutSuccessResponse,
+  ErrorResponse,
+} from "@/types/websocket";
 
 type AuthContextType = {
   user: string | null;
@@ -16,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (stored) {
         console.log(
           "AuthProvider: loaded username from sessionStorage:",
-          stored
+          stored,
         );
         return stored;
       } else {
@@ -47,15 +53,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ? sessionStorage.getItem("username")
         : null);
 
-    if (currentUser) {
-      fetch("/api/mock/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    if (!currentUser) return;
+
+    // クライアント管理サーバへ WebSocket 経由で LOGOUT を送信
+    try {
+      // ハンドラ登録
+      const offSuccess = gameWebSocket.on(
+        "LOGOUT_SUCCESS",
+        (_data: LogoutSuccessResponse) => {
+          setUser(null);
+          offSuccess();
+          offErr();
+          try {
+            gameWebSocket.disconnectAll();
+          } catch (_) {}
         },
-        body: JSON.stringify({ type: "LOGOUT", userId: currentUser }),
-      }).catch((e) => console.error("Logout error:", e));
-      setUser(null);
+      );
+
+      const offErr = gameWebSocket.on("ERROR", (err: ErrorResponse) => {
+        console.error("Logout error (WS):", err);
+        offSuccess();
+        offErr();
+      });
+
+      // 既に接続済みなら送信
+      const logoutMsg: LogoutMessage = { type: "LOGOUT", userId: currentUser };
+      if (gameWebSocket.isConnected()) {
+        gameWebSocket.send(logoutMsg);
+        return;
+      }
+
+      // 未接続なら一時的に接続して送信（少し遅延を置いて送る）
+      const url =
+        process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ??
+        "ws://localhost:8080/app/client-manage";
+      gameWebSocket.connectToClientManage(url);
+      setTimeout(() => {
+        try {
+          gameWebSocket.send(logoutMsg);
+        } catch (e) {
+          console.error("Logout send error after connect:", e);
+        }
+      }, 250);
+    } catch (e) {
+      console.error("Logout unexpected error:", e);
+      // フォールバック: 開発時は既存のモックエンドポイントへフォールバック
+      if (process.env.NODE_ENV !== "production") {
+        fetch("/api/mock/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "LOGOUT", userId: currentUser }),
+        }).catch((err) => console.error("Fallback logout error:", err));
+        setUser(null);
+      }
     }
   };
 

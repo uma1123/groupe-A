@@ -35,3 +35,11 @@ bin/
 /build/
 /out/
 *.class
+
+# Maven
+target/
+
+
+# その他
+*.jar
+*.log

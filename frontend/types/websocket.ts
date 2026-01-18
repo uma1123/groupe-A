@@ -33,6 +33,13 @@ export type JoinRoomMessage = {
   roomId: number; // ★ string から number に変更
 };
 
+// プレイヤーがルームを退出する時
+export type LeaveRoomMessage = {
+  type: "LEAVE_ROOM";
+  userId: string;
+  roomId: string;
+};
+
 // ホストがゲーム開始ボタンを押した時
 export type StartGameMessage = {
   type: "START_GAME";
@@ -56,6 +63,12 @@ export type NextRoundMessage = {
   roomId: string;
 };
 
+// ログアウト要求
+export type LogoutMessage = {
+  type: "LOGOUT";
+  userId: string;
+};
+
 // 送信メッセージのユニオン型
 export type ClientMessage =
   | SignupMessage
@@ -64,7 +77,9 @@ export type ClientMessage =
   | JoinRoomMessage
   | StartGameMessage
   | SubmitNumberMessage
-  | NextRoundMessage;
+  | LogoutMessage
+  | NextRoundMessage
+  | LeaveRoomMessage;
 
 // ==========================================
 // 2. サーバー受信データ (Server -> Client)
@@ -86,6 +101,11 @@ export type ErrorResponse = {
   message: string;
 };
 
+export type LogoutSuccessResponse = {
+  type: "LOGOUT_SUCCESS";
+  userId: string;
+};
+
 // --- 認証・ロビー応答 ---
 export type AuthSuccessResponse = {
   type: "AUTH_SUCCESS";
@@ -93,16 +113,20 @@ export type AuthSuccessResponse = {
   userName: string;
 };
 
+// ★ サーバーの実際のレスポンス形式に合わせて修正
 export type CreateRoomSuccessResponse = {
   type: "CREATE_ROOM_SUCCESS";
   roomId: string;
-  settings: { maxPlayers: number; lives: number };
+  maxPlayers: number; // ★ settings からフラットに変更
+  lives: number; // ★ settings からフラットに変更
 };
 
 export type JoinRoomSuccessResponse = {
   type: "JOIN_ROOM_SUCCESS";
   roomId: string;
   currentPlayers: string[];
+  maxPlayers: number; // ★ 追加
+  lives: number; // ★ 追加
 };
 
 // 【重要】他プレイヤーの入室通知（ブロードキャスト）
@@ -110,6 +134,11 @@ export type PlayerJoinedResponse = {
   type: "PLAYER_JOINED";
   newUser: string;
   totalPlayers: number;
+};
+
+export type PlayerLeftResponse = {
+  type: "PLAYER_LEFT";
+  userId: string;
 };
 
 // 【重要】アプリサーバへの移動命令
@@ -126,6 +155,8 @@ export type GameStartResponse = {
   type: "GAME_START";
   roomId: string;
   totalRounds: number;
+  players: string[]; // ★ 追加: プレイヤー名リスト
+  initialLife: number; // ★ 追加: 初期ライフ
   availableRules: RuleData[]; // サーバーが持っている全ルール
   firstRule: RuleData; // 最初のラウンドで使用するルール
 };
@@ -164,6 +195,7 @@ export type AllPlayersResultResponse = {
     result: "WIN" | "LOSE" | "DRAW";
     lives: number;
     isDead: boolean;
+    penalty?: number; // このラウンドで受けた追加ペナルティ（任意）
   }[];
   targetValue: number;
   average: number; // 全員の平均値
@@ -197,10 +229,12 @@ export type ServerResponse =
   | CreateRoomSuccessResponse
   | JoinRoomSuccessResponse
   | PlayerJoinedResponse
+  | PlayerLeftResponse // ★ 追加
+  | LogoutSuccessResponse
   | GoToGameServerResponse
-  | GameStartResponse // ★ 追加
-  | RoundStartResponse // ★ 追加
+  | GameStartResponse
+  | RoundStartResponse
   | RoundResultResponse
-  | AllPlayersResultResponse // ★ 追加
+  | AllPlayersResultResponse
   | NextRoundResponse
   | FinalResultResponse;

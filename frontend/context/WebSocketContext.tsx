@@ -25,14 +25,18 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 環境変数からモードを取得
     const mockMode = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
+
+    // ★ 修正: クライアント管理サーバのURLを使用
     const wsUrl =
-      process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/app/sample";
+      process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
+      "ws://localhost:8080/app/client-manage";
 
     if (mockMode) {
       gameWebSocket.enableMockMode();
     }
 
-    gameWebSocket.connect(wsUrl);
+    // ★ 修正: connectToClientManage を使用
+    gameWebSocket.connectToClientManage(wsUrl);
 
     const checkConnection = setInterval(() => {
       setIsConnected(gameWebSocket.isConnected());
@@ -40,16 +44,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       clearInterval(checkConnection);
-      gameWebSocket.disconnect();
+      gameWebSocket.disconnectAll();
     };
   }, []);
 
   const connect = (url?: string) => {
-    gameWebSocket.connect(url);
+    // ★ 修正: デフォルトURLを変更
+    const defaultUrl =
+      process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
+      "ws://localhost:8080/app/client-manage";
+    gameWebSocket.connectToClientManage(url || defaultUrl);
   };
 
   const disconnect = () => {
-    gameWebSocket.disconnect();
+    gameWebSocket.disconnectAll();
   };
 
   return (

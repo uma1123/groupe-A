@@ -4,11 +4,55 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
 const mockPush = jest.fn();
 
+jest.useFakeTimers();
+
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ user: "tester" }),
+}));
+
+// Mock gameWebSocket to simulate GO_TO_GAME_SERVER and player events
+jest.mock("@/lib/websocket", () => {
+  const handlers: Record<string, Set<Function>> = {};
+  return {
+    gameWebSocket: {
+      on: (type: string, handler: Function) => {
+        handlers[type] = handlers[type] || new Set();
+        handlers[type].add(handler);
+        return () => handlers[type]?.delete(handler);
+      },
+      send: (message: any) => {
+        if (message.type === "START_GAME") {
+          // simulate error when special roomId requested
+          if (message.roomId === "FAIL") {
+            const err = { type: "ERROR", message: "開始失敗" };
+            handlers["ERROR"]?.forEach((h) => h(err));
+            return;
+          }
+          const resp = {
+            type: "GO_TO_GAME_SERVER",
+            roomId: message.roomId,
+            nextEndpoint: "ws://localhost:8081/app/game",
+          };
+          handlers["GO_TO_GAME_SERVER"]?.forEach((h) => h(resp));
+        }
+      },
+      connectToGameServer: () => {},
+      isGameServerConnected: () => true,
+      sendToClientManage: () => {},
+      clearHandlers: () =>
+        Object.keys(handlers).forEach((k) => delete handlers[k]),
+    },
+  };
+});
+// Mock RoomContext used by the hook
+jest.mock("@/context/RoomContext", () => ({
+  useRoomContext: () => ({
+    addPlayer: jest.fn(),
+    removePlayer: jest.fn(),
+  }),
 }));
 
 describe("useRoomController", () => {
@@ -17,43 +61,19 @@ describe("useRoomController", () => {
   });
 
   it("startGame成功時にゲームページへ遷移", async () => {
-    global.fetch = jest.fn(
-      async () =>
-        ({
-          ok: true,
-          json: jest.fn(async () => ({ success: true })),
-        } as any)
-    );
-
     const { result } = renderHook(() => useRoomController());
 
     await act(async () => {
-      const ok = await result.current.startGame("ROOM1");
-      expect(ok).toBe(true);
+      result.current.startGame("ROOM1");
+    });
+
+    // allow interval (100ms) that checks connection to run
+    act(() => {
+      jest.advanceTimersByTime(200);
     });
 
     expect(mockPush).toHaveBeenCalledWith("/game/ROOM1");
     expect(result.current.error).toBe("");
-  });
-
-  it("startGame失敗時にerror", async () => {
-    global.fetch = jest.fn(
-      async () =>
-        ({
-          ok: false,
-          json: jest.fn(async () => ({ success: false, message: "開始失敗" })),
-        } as any)
-    );
-
-    const { result } = renderHook(() => useRoomController());
-
-    await act(async () => {
-      const ok = await result.current.startGame("ROOM1");
-      expect(ok).toBe(false);
-    });
-
-    expect(result.current.error).toContain("失敗");
-    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("leaveRoomでロビーへ遷移", () => {

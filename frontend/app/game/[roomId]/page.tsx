@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Users, Timer, Target, User, RotateCcw, Shuffle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -14,7 +14,7 @@ export default function GamePage() {
   const roomId = (params?.roomId as string) || "";
   const { user } = useAuth();
 
-  // ★Controllerを使用
+  // ★ useGameController を呼び出す
   const {
     submitNumber,
     nextRound,
@@ -32,16 +32,24 @@ export default function GamePage() {
     players,
     targetValue,
     currentRule,
-    shuffleRule,
-    showResult,
-    timeRemaining, // ★追加
-    isTimerRunning, // ★追加
-    showRoundStart, // ★追加
-    startTimer, // ★デバッグ用
+    timeRemaining,
+    isTimerRunning,
+    showRoundStart,
   } = useGameController(roomId);
 
   const [selectedNumber, setSelectedNumber] = useState("");
   const alivePlayers = players.filter((p) => p.status === "alive").length;
+
+  // 表示用の並び替え: YOU を常に先頭にする
+  const orderedPlayers = useMemo(() => {
+    const visible = players.slice();
+    const youIdx = visible.findIndex((p) => p.isYou);
+    if (youIdx > 0) {
+      const you = visible.splice(youIdx, 1)[0];
+      return [you, ...visible];
+    }
+    return visible;
+  }, [players]);
 
   const handleSubmit = () => {
     if (!selectedNumber) return;
@@ -60,7 +68,7 @@ export default function GamePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="text-center">
             <h2 className="text-6xl font-bold text-red-500 mb-4 animate-pulse">
-              ラウンド {currentRound}
+              ラウンド {currentRound}/{totalRounds}
             </h2>
             <p className="text-2xl text-slate-300 uppercase tracking-widest">
               開始
@@ -167,7 +175,6 @@ export default function GamePage() {
                     <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
                       このラウンドのランダムルール
                     </span>
-                    {currentRule && null}
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
@@ -221,7 +228,7 @@ export default function GamePage() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm text-slate-400">平均値 ×</span>
                     <span className="text-2xl font-bold text-red-400 font-mono">
-                      {currentRule?.multiplierLabel ?? "0.8"}
+                      0.8
                     </span>
                     <span className="text-sm text-slate-400">=</span>
                     <span className="text-4xl font-bold text-red-500 font-mono drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]">
@@ -243,17 +250,28 @@ export default function GamePage() {
                 参加者
               </h2>
               <div className="space-y-3">
-                <div className="grid grid-cols-5 gap-3">
-                  {players.slice(0, 5).map((player) => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-                </div>
-                <div className="grid grid-cols-5 gap-3">
-                  <div></div>
-                  {players.slice(5, 9).map((player) => (
-                    <PlayerCard key={player.id} player={player} />
-                  ))}
-                </div>
+                {/* ★ 実際のプレイヤー（status !== "empty"）が存在する場合のみ表示 */}
+                {players.filter((p) => p.status !== "empty").length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-5 gap-3">
+                      {orderedPlayers.slice(0, 5).map((player) => (
+                        <PlayerCard key={player.id} player={player} />
+                      ))}
+                    </div>
+                    {orderedPlayers.length > 5 && (
+                      <div className="grid grid-cols-5 gap-3">
+                        <div></div>
+                        {orderedPlayers.slice(5, 9).map((player) => (
+                          <PlayerCard key={player.id} player={player} />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    ゲームサーバから接続中...
+                  </div>
+                )}
               </div>
 
               {showRoundResult && (
@@ -273,7 +291,7 @@ export default function GamePage() {
                           {gameResult === "WIN"
                             ? user || "Player 1"
                             : players.find(
-                                (p) => p.status === "alive" && !p.isYou
+                                (p) => p.status === "alive" && !p.isYou,
                               )?.name || "Player 2"}
                         </p>
                         <p className="text-xs text-slate-400">
@@ -309,17 +327,14 @@ export default function GamePage() {
           {/* 右側：入力パネル */}
           <div className="lg:col-span-1">
             <div className="bg-black/60 border border-red-500/30 rounded-lg p-6 sticky top-6 shadow-xl">
-              {!isSubmitted ? (
+              {!isSubmitted && !waitingForOthers ? (
                 <>
                   <h2 className="text-lg font-bold text-red-500 uppercase tracking-wider mb-4 border-b border-red-900/30 pb-2">
                     数値選択
                   </h2>
                   <p className="text-slate-400 text-xs mb-6 leading-relaxed">
                     0から100の間で数値を選択してください。全員の平均値に
-                    <span className="text-red-400 font-bold">
-                      {" "}
-                      {currentRule?.multiplierLabel ?? "0.8"}{" "}
-                    </span>
+                    <span className="text-red-400 font-bold"> 0.8 </span>
                     を掛けた値に最も近い数値を選んだプレイヤーが勝利します。
                   </p>
                   <div className="space-y-6">
@@ -392,25 +407,6 @@ export default function GamePage() {
       {/* デバッグボタン */}
       <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
         <button
-          onClick={() => showResult("WIN")}
-          className="bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded text-xs font-bold"
-        >
-          WIN
-        </button>
-        <button
-          onClick={() => showResult("LOSE")}
-          className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-xs font-bold"
-        >
-          LOSE
-        </button>
-        <button
-          onClick={startTimer}
-          className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
-        >
-          <Timer size={14} />
-          Start
-        </button>
-        <button
           onClick={resetGame}
           className="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
         >
@@ -418,11 +414,10 @@ export default function GamePage() {
           Reset
         </button>
         <button
-          onClick={shuffleRule}
-          className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
+          onClick={exitGame}
+          className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-xs font-bold"
         >
-          <Shuffle size={14} />
-          Rule
+          Exit
         </button>
       </div>
     </div>
