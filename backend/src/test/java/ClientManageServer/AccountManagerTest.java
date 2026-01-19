@@ -1,7 +1,6 @@
-/* 一旦コメントアウト
-package ClientManageServer.TEST;
+/*一応のコメントアウト
+package ClientManageServer;
 
-import ClientManageServer.AccountManager;
 import org.junit.jupiter.api.*;
 
 import java.sql.Connection;
