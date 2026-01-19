@@ -1,18 +1,3 @@
-////TIP コードを<b>実行</b>するには、<shortcut actionId="Run"/> を押すか
-//// ガターの <icon src="AllIcons.Actions.Execute"/> アイコンをクリックします。
-//public class Main {
-//    public static void main(String[] args) {
-//        //TIP ハイライトされたテキストにキャレットがある状態で <shortcut actionId="ShowIntentionActions"/> を押すと
-//        // IntelliJ IDEA によるその修正案を確認できます。
-//        System.out.printf("Hello and welcome!");
-//
-//        for (int i = 1; i <= 5; i++) {
-//            //TIP <shortcut actionId="Debug"/> を押してコードのデバッグを開始します。<icon src="AllIcons.Debugger.Db_set_breakpoint"/> ブレークポイントを 1 つ設定しましたが、
-//            // <shortcut actionId="ToggleLineBreakpoint"/> を押すといつでも他のブレークポイントを追加できます。
-//            System.out.println("i = " + i);
-//        }
-//    }
-//}
 import org.glassfish.tyrus.server.Server;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
@@ -27,7 +12,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 import ClientManageServer.ClientManageEndpoint;
 import ApplicationServer.GameEndpoint;
@@ -58,7 +42,7 @@ public class Main {
             // HTTPサーバ起動（ゲーム初期化API用）
             startHttpServer();
 
-            System.out.println("サーバー稼働中... Enterキーで終了");
+            System.out.println("サーバー稼働中");
             System.in.read();
 
         } catch (Exception e) {
@@ -106,7 +90,7 @@ public class Main {
             // リクエストボディを読み取り
             InputStream is = exchange.getRequestBody();
             String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            System.out.println("📥 INIT_GAME 受信: " + body);
+            System.out.println(" INIT_GAME 受信: " + body);
 
             Gson gson = new Gson();
             JsonObject json = JsonParser.parseString(body).getAsJsonObject();
@@ -125,7 +109,7 @@ public class Main {
 
             // ★ GameEndpoint の static Map に直接保存
             GameEndpoint.pendingGames.put(info.roomId, info);
-            System.out.println("✅ ゲーム初期化情報保存: roomId=" + info.roomId + ", players=" + info.players);
+            System.out.println(" ゲーム初期化情報保存: roomId=" + info.roomId + ", players=" + info.players);
 
             // 成功レスポンス
             String response = "{\"status\":\"ok\",\"roomId\":\"" + info.roomId + "\"}";

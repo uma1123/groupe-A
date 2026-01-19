@@ -1,3 +1,5 @@
+// 削除する（デバック用）
+
 "use client";
 
 import { useWebSocket } from "@/context/WebSocketContext";

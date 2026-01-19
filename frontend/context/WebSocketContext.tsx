@@ -1,3 +1,4 @@
+// 別端末での動作確認の時にurlを変える
 "use client";
 
 import {
@@ -16,7 +17,7 @@ type WebSocketContextType = {
 };
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function WebSocketProvider({ children }: { children: ReactNode }) {
@@ -26,7 +27,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     // 環境変数からモードを取得
     const mockMode = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 
-    // ★ 修正: クライアント管理サーバのURLを使用
+    //  クライアント管理サーバのURLを使用
     const wsUrl =
       process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
       "ws://localhost:8080/app/client-manage";
@@ -35,7 +36,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       gameWebSocket.enableMockMode();
     }
 
-    // ★ 修正: connectToClientManage を使用
+    //  connectToClientManage を使用
     gameWebSocket.connectToClientManage(wsUrl);
 
     const checkConnection = setInterval(() => {
@@ -49,7 +50,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const connect = (url?: string) => {
-    // ★ 修正: デフォルトURLを変更
+    //  デフォルトURLを変更
     const defaultUrl =
       process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
       "ws://localhost:8080/app/client-manage";

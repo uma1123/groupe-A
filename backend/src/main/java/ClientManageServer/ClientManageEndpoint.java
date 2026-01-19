@@ -1,5 +1,7 @@
 package ClientManageServer;
 
+// クライアント管理エンドポイント（別端末と通信する時IPアドレス書き換える）
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

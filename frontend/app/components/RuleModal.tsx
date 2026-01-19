@@ -5,6 +5,7 @@ type RuleModalProps = {
   onClose: () => void;
 };
 
+// ゲームルールモーダルコンポーネント
 export default function RuleModal({ isOpen, onClose }: RuleModalProps) {
   if (!isOpen) return null;
 

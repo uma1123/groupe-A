@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// ルール管理クラス
 public class Rule {
     CollectionOfRandRules ruleList;
     private String currentRuleId;

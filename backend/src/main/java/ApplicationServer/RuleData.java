@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// ルールデータを表すクラス
 public class RuleData {
     public String id;
     public String name;

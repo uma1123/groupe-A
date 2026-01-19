@@ -12,13 +12,14 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+// ゲーム用WebSocketエンドポイント
 @ServerEndpoint("/game")
 public class GameEndpoint {
 
-    // ★ ゲーム初期化情報を保持（Main.pendingGames の代わり）
+    //  ゲーム初期化情報を保持
     public static Map<String, GameInitInfo> pendingGames = new ConcurrentHashMap<>();
     
-    // ★ GameInitInfo を GameEndpoint 内に定義
+    //  GameInitInfo を GameEndpoint 内に定義
     public static class GameInitInfo {
         public String roomId;
         public int maxPlayers;
@@ -42,7 +43,7 @@ public class GameEndpoint {
         Map<String, Integer> playerLives = new HashMap<>();
         List<String> players = new ArrayList<>();
         List<String> connectedPlayers = new ArrayList<>();
-        messages.ServerMessages.RuleData currentRule; // ★ 型を明示
+        messages.ServerMessages.RuleData currentRule; 
         boolean gameStarted = false;
         String state = "WAITING_FOR_PLAYERS";
         long startTime;
@@ -53,7 +54,7 @@ public class GameEndpoint {
     @OnOpen
     public void onOpen(Session session) {
         sessions.add(session);
-        System.out.println("🔗 ゲームサーバ接続: " + session.getId());
+        System.out.println(" ゲームサーバ接続: " + session.getId());
 
         // クエリパラメータからroomIdを取得
         String query = session.getQueryString();
@@ -124,7 +125,7 @@ public class GameEndpoint {
             GameState newGame = new GameState();
             newGame.roomId = roomId;
 
-            // ★ GameEndpoint.pendingGames からゲーム情報を取得
+            //  GameEndpoint.pendingGames からゲーム情報を取得
             GameInitInfo info = pendingGames.get(roomId);
             if (info != null) {
                 newGame.players = new ArrayList<>(info.players);
@@ -132,7 +133,7 @@ public class GameEndpoint {
                 for (String p : info.players) {
                     newGame.playerLives.put(p, info.initialLife);
                 }
-                System.out.println("✅ ゲーム情報ロード: " + info.players);
+                System.out.println("ゲーム情報ロード: " + info.players);
             }
             return newGame;
         });
@@ -142,7 +143,7 @@ public class GameEndpoint {
             game.connectedPlayers.add(oderId);
         }
 
-        System.out.println("👤 " + oderId + " がゲームに参加 (" + 
+        System.out.println( oderId + " がゲームに参加 (" + 
             game.connectedPlayers.size() + "/" + game.players.size() + ")");
 
         // 参加成功を通知
@@ -159,10 +160,10 @@ public class GameEndpoint {
      * ゲーム開始処理
      */
     private void startGame(GameState game) {
-        System.out.println("🎮 ゲーム開始: roomId=" + game.roomId);
+        System.out.println("ゲーム開始: roomId=" + game.roomId);
         
         // ルール抽選
-        messages.ServerMessages.RuleData firstRule = CollectionOfRandRules.getRandomRule(); // ★
+        messages.ServerMessages.RuleData firstRule = CollectionOfRandRules.getRandomRule(); 
         game.currentRule = firstRule;
 
         // totalRounds を初期化 (maxRounds = Math.max(10, initialLife * 2 + Math.ceil(maxPlayers / 2)))
@@ -170,24 +171,24 @@ public class GameEndpoint {
         int maxPlayers = info != null ? info.maxPlayers : Math.max(1, game.players.size());
         game.totalRounds = Math.max(10, game.initialLife * 2 + (int) Math.ceil(maxPlayers / 2.0));
 
-        // ★ GameStartResponse を構築（プレイヤー情報を含める）
+        //  GameStartResponse を構築（プレイヤー情報を含める）
         Gson gson = new Gson();
         JsonObject response = new JsonObject();
         response.addProperty("type", "GAME_START");
         response.addProperty("roomId", game.roomId);
         response.addProperty("totalRounds", game.totalRounds);
-        response.addProperty("initialLife", game.initialLife);  // ★ 追加
+        response.addProperty("initialLife", game.initialLife);  
         
-        // ★ プレイヤーリストを追加
+        //  プレイヤーリストを追加
         JsonArray playersArray = new JsonArray();
         for (String player : game.players) {
             playersArray.add(player);
         }
-        response.add("players", playersArray);  // ★ 追加
+        response.add("players", playersArray);  
         
         // ルール情報を追加
         response.add("firstRule", gson.toJsonTree(firstRule));
-        response.add("availableRules", gson.toJsonTree(CollectionOfRandRules.getAllRules())); // 型一致
+        response.add("availableRules", gson.toJsonTree(CollectionOfRandRules.getAllRules()));
 
         // 全プレイヤーに送信
         broadcastToRoom(game.roomId, response);
@@ -199,7 +200,7 @@ public class GameEndpoint {
         game.state = "ROUND_IN_PROGRESS";
         new Thread(() -> {
             try {
-                Thread.sleep(600); // 600ms の猶予
+                Thread.sleep(700); // 700ms の猶予
             } catch (InterruptedException e) {
                 // ignore
             }
@@ -211,7 +212,7 @@ public class GameEndpoint {
      * ラウンド開始
      */
     private void startRound(GameState game) {
-        System.out.println("🔄 ラウンド " + game.currentRound + " 開始");
+        System.out.println("ラウンド " + game.currentRound + " 開始");
 
         game.playerNumbers.clear();
 
@@ -270,7 +271,7 @@ public class GameEndpoint {
 
         // 上書きで保存（同一ユーザーの再送対応）
         game.playerNumbers.put(userId, num);
-        System.out.println("📥 受信: " + userId + " => " + num + " (room=" + roomId + ")");
+        System.out.println(" 受信: " + userId + " => " + num + " (room=" + roomId + ")");
 
         // 判定対象は現在『生存している』プレイヤー数（ライフ>0 のプレイヤー）にする
         int expected = 0;

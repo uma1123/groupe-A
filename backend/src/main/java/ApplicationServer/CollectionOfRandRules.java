@@ -3,8 +3,9 @@ package ApplicationServer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import messages.ServerMessages.RuleData;  // ★ 追加
+import messages.ServerMessages.RuleData;  
 
+// ランダムルールのコレクション管理クラス
 public class CollectionOfRandRules {
     public int ruleCount;
     private ArrayList<RandRule> randRuleList;
@@ -27,9 +28,9 @@ public class CollectionOfRandRules {
         return instance;
     }
 
+    // ランダムルールリストを作成
     private ArrayList<RandRule> Makerules() {
         ArrayList<RandRule> rulelist = new ArrayList<>();
-        // 実装対象のみ登録: RULE_ODD, RULE_EVEN, RULE_PRIME, ONE_ON_ONE
         // lifeDamage はルール違反時のライフ減少量 (正の値)
         RandRule rule1 = new RandRule("RULE_ODD", "奇数のみ選択可能(それ以外を選んだ場合ライフ-1)", 1);
         rulelist.add(rule1);
@@ -73,16 +74,13 @@ public class CollectionOfRandRules {
         return ruleDataList;
     }
 
-    /**
-     * RandRule を RuleData に変換
-     */
+    // RandRule を RuleData に変換
     private static RuleData convertToRuleData(RandRule randRule) {
         RuleData ruleData = new RuleData();
         ruleData.id = randRule.getName();
         ruleData.name = randRule.getName();
         ruleData.description = randRule.getDescriprion();
         ruleData.lifeDamage = randRule.getLifeDamage();
-        // multiplierLabel は messages.ServerMessages.RuleData には無いので設定しない
         return ruleData;
     }
 }

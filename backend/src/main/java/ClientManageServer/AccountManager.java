@@ -2,6 +2,7 @@ package ClientManageServer;
 
 import java.sql.*;
 
+// アカウント管理クラス(DB接続・操作)
 public class AccountManager {
 
     private static final String DB_URL  = "jdbc:mysql://sql.yamazaki.se.shibaura-it.ac.jp:13308/db_group_a";

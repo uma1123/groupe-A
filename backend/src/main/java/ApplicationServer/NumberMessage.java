@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// プレイヤーの選んだ数字を表すメッセージ
 public class NumberMessage {
     String userid;
     int roomid;

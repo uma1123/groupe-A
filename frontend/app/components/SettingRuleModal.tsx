@@ -7,6 +7,7 @@ type Props = {
   onCloseAction: () => void;
 };
 
+// ゲーム設定モーダルコンポーネント(ライフ数と最大プレイヤー数)
 export default function SettingRuleModal({
   onConfirmAction,
   onCloseAction,
@@ -82,7 +83,7 @@ export default function SettingRuleModal({
                 className="w-full accent-red-500"
               />
               <div className="flex justify-between text-[10px] font-mono text-red-800">
-                <span>1</span>
+                <span>2</span>
                 <span>10</span>
               </div>
             </div>

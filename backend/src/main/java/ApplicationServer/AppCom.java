@@ -2,6 +2,7 @@ package ApplicationServer;
 
 import org.glassfish.tyrus.server.Server;
 
+// アプリケーションサーバの起動クラス
 public class AppCom {
     static String contextRoot = "/app";
     static String protocol = "ws";

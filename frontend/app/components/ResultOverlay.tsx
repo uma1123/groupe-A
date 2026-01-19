@@ -2,6 +2,7 @@
 
 import { Crown, Skull, LogOut } from "lucide-react";
 
+//最終結果オーバレイコンポーネント
 export const ResultOverlay = ({
   result,
   onExit,

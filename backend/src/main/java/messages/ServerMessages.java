@@ -19,7 +19,7 @@ public class ServerMessages {
         }
     }
     
-    // 認証成功（引数2つに修正）
+    // 認証成功
     public static class AuthSuccessResponse {
         public String type = "AUTH_SUCCESS";
         public String userId;
@@ -31,7 +31,7 @@ public class ServerMessages {
         }
     }
     
-    // ログアウト成功（引数1つに修正）
+    // ログアウト成功
     public static class LogoutSuccessResponse {
         public String type = "LOGOUT_SUCCESS";
         public String userId;
@@ -41,7 +41,7 @@ public class ServerMessages {
         }
     }
     
-    // ルーム作成成功（roomIdをString型に変更）
+    // ルーム作成成功
     public static class CreateRoomSuccessResponse {
         public String type = "CREATE_ROOM_SUCCESS";
         public String roomId;
@@ -60,8 +60,8 @@ public class ServerMessages {
         public String type = "JOIN_ROOM_SUCCESS";
         public String roomId;
         public List<String> currentPlayers;
-        public int maxPlayers;    // ★ 追加
-        public int lives;         // ★ 追加
+        public int maxPlayers;    
+        public int lives;         
         
         public JoinRoomSuccessResponse(String roomId, List<String> currentPlayers, int maxPlayers, int lives) {
             this.roomId = roomId;
@@ -108,8 +108,8 @@ public class ServerMessages {
         public String type = "GAME_START";
         public String roomId;
         public int totalRounds;
-        public List<String> players;           // ★ 追加: プレイヤー名リスト
-        public int initialLife;                // ★ 追加: 初期ライフ
+        public List<String> players;           
+        public int initialLife;                
         public RuleData firstRule;
         public List<RuleData> availableRules;
         
@@ -146,7 +146,7 @@ public class ServerMessages {
     public static class RoundResultResponse {
         public String type = "ROUND_RESULT";
         public String roomId;
-        public String userId;  // ★ userId に変更
+        public String userId;  
         public String roundResult;
         public int targetValue;
         public int yourNumber;
@@ -165,7 +165,7 @@ public class ServerMessages {
         
         public static class RankingEntry {
             public int rank;
-            public String userId;  // ← oderId から userId に変更
+            public String userId;  
             public int lives;
         }
     }
