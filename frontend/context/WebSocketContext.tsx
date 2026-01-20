@@ -24,17 +24,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // 環境変数からモードを取得
-    const mockMode = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
-
     //  クライアント管理サーバのURLを使用
     const wsUrl =
       process.env.NEXT_PUBLIC_CLIENT_MANAGE_WS_URL ||
       "ws://localhost:8080/app/client-manage";
-
-    if (mockMode) {
-      gameWebSocket.enableMockMode();
-    }
 
     //  connectToClientManage を使用
     gameWebSocket.connectToClientManage(wsUrl);

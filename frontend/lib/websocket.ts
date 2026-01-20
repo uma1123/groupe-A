@@ -10,28 +10,13 @@ export class GameWebSocket {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private url: string = "";
-  private mockMode: boolean = false;
   private currentMode: "CLIENT_MANAGE" | "GAME" | null = null;
-
-  /**
-   * モックを有効化
-   */
-  enableMockMode(): void {
-    this.mockMode = true;
-    console.log(" モックモード有効化");
-  }
 
   /**
    * WebSocket接続を確立
    */
   connect(url: string = "ws://localhost:8080/app/client-manage"): void {
     this.url = url;
-
-    if (this.mockMode) {
-      console.log("🧪 モックモードで動作中（実際の接続は行いません）");
-      this.simulateConnection();
-      return;
-    }
 
     try {
       this.activeSocket = new WebSocket(url);
@@ -85,16 +70,6 @@ export class GameWebSocket {
   }
 
   /**
-   * モックモード時の疑似接続
-   */
-  private simulateConnection(): void {
-    setTimeout(() => {
-      console.log(" モック接続成功");
-      this.reconnectAttempts = 0;
-    }, 100);
-  }
-
-  /**
    * 再接続を試行
    */
   private attemptReconnect(): void {
@@ -110,162 +85,9 @@ export class GameWebSocket {
   }
 
   /**
-   * モックレスポンスを生成
-   */
-  private handleResponse(message: ClientMessage): void {
-    setTimeout(() => {
-      let response: ServerResponse | null = null;
-
-      switch (message.type) {
-        case "LOGIN": {
-          const loginMsg = message as Extract<ClientMessage, { type: "LOGIN" }>;
-          response = {
-            type: "AUTH_SUCCESS",
-            userId: loginMsg.userId,
-            userName: loginMsg.userId,
-          };
-          break;
-        }
-
-        case "SIGNUP": {
-          const signupMsg = message as Extract<
-            ClientMessage,
-            { type: "SIGNUP" }
-          >;
-          response = {
-            type: "AUTH_SUCCESS",
-            userId: signupMsg.userId,
-            userName: signupMsg.userId,
-          };
-          break;
-        }
-
-        case "CREATE_ROOM": {
-          const createMsg = message as Extract<
-            ClientMessage,
-            { type: "CREATE_ROOM" }
-          >;
-          response = {
-            type: "CREATE_ROOM_SUCCESS",
-            roomId: Math.floor(1000 + Math.random() * 9000).toString(),
-            maxPlayers: createMsg.numOfPlayer,
-            lives: createMsg.numOfLife,
-          };
-          break;
-        }
-
-        case "JOIN_ROOM": {
-          const joinMsg = message as Extract<
-            ClientMessage,
-            { type: "JOIN_ROOM" }
-          >;
-          response = {
-            type: "JOIN_ROOM_SUCCESS",
-            roomId: joinMsg.roomId.toString(),
-            currentPlayers: ["Player1", joinMsg.userId],
-            maxPlayers: 4,
-            lives: 3,
-          };
-          break;
-        }
-
-        case "LEAVE_ROOM": {
-          const leaveMsg = message as Extract<
-            ClientMessage,
-            { type: "LEAVE_ROOM" }
-          >;
-          response = {
-            type: "PLAYER_LEFT",
-            userId: leaveMsg.userId,
-          };
-          break;
-        }
-
-        case "START_GAME": {
-          const startMsg = message as Extract<
-            ClientMessage,
-            { type: "START_GAME" }
-          >;
-          response = {
-            type: "GO_TO_GAME_SERVER",
-            roomId: startMsg.roomId,
-            nextEndpoint: "ws://localhost:8081/app/game",
-          };
-          break;
-        }
-
-        case "SUBMIT_NUMBER": {
-          const submitMsg = message as Extract<
-            ClientMessage,
-            { type: "SUBMIT_NUMBER" }
-          >;
-          response = {
-            type: "ROUND_RESULT",
-            roomId: submitMsg.roomId,
-            userId: submitMsg.userId,
-            roundResult: Math.random() > 0.5 ? "WIN" : "LOSE",
-            targetValue: Math.floor(Math.random() * 100),
-            yourNumber: submitMsg.num,
-            newLife: 2,
-            isDead: false,
-            appliedRule: {
-              id: "RULE_ODD",
-              name: "奇数のみ",
-              description: "奇数のみ選択可能",
-              lifeDamage: 1,
-            },
-          };
-          break;
-        }
-
-        case "NEXT_ROUND": {
-          const nextMsg = message as Extract<
-            ClientMessage,
-            { type: "NEXT_ROUND" }
-          >;
-          response = {
-            type: "ROUND_START",
-            roomId: nextMsg.roomId,
-            currentRound: 2,
-            totalRounds: 3,
-            rule: {
-              id: "RULE_EVEN",
-              name: "偶数のみ",
-              description: "偶数のみ選択可能",
-              lifeDamage: 1,
-            },
-            timerDuration: 60,
-          };
-          break;
-        }
-      }
-
-      if (response) {
-        console.log(" モック受信:", response.type, response);
-        const set = this.handlers.get(response.type);
-        if (set && set.size > 0) {
-          set.forEach((h) => {
-            try {
-              h(response);
-            } catch (e) {
-              console.error("モックハンドラ実行エラー:", e);
-            }
-          });
-        }
-      }
-    }, 500);
-  }
-
-  /**
    * メッセージを送信
    */
   send(message: ClientMessage): void {
-    if (this.mockMode) {
-      console.log(" モック送信:", message.type, message);
-      this.handleResponse(message);
-      return;
-    }
-
     if (this.activeSocket?.readyState === WebSocket.OPEN) {
       this.activeSocket.send(JSON.stringify(message));
       console.log(
@@ -363,7 +185,6 @@ export class GameWebSocket {
    * 接続中かどうか
    */
   isConnected(): boolean {
-    if (this.mockMode) return true;
     return this.activeSocket?.readyState === WebSocket.OPEN;
   }
 
@@ -402,11 +223,6 @@ export class GameWebSocket {
     console.log(" クライアント管理サーバに接続:", url);
     this.currentMode = "CLIENT_MANAGE";
     this.url = url;
-
-    if (this.mockMode) {
-      console.log(" モックモードで動作中");
-      return;
-    }
 
     this.clientManageSocket = new WebSocket(url);
     this.activeSocket = this.clientManageSocket;
