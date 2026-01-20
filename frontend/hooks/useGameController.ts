@@ -189,6 +189,7 @@ export const useGameController = (roomId: string) => {
         setAvailableRules(data.availableRules || []);
         setCurrentRule(data.firstRule as GameRule);
         setRuleHistory([data.firstRule as GameRule]);
+        setCurrentRound(1); // ★ ゲーム開始時に currentRound を1に設定
         beginRoundStart();
       },
     );
@@ -289,7 +290,7 @@ export const useGameController = (roomId: string) => {
       offAllPlayersResult();
       offFinalResult();
     };
-  }, [user, initialLife, beginRoundStart]);
+  }, [user, beginRoundStart]);
 
   const nextRound = useCallback(() => {
     const myPlayer = players.find((p) => p.isYou);

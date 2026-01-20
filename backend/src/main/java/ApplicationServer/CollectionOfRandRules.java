@@ -63,6 +63,25 @@ public class CollectionOfRandRules {
     }
 
     /**
+     * ONE_ON_ONE以外のルールをランダムに取得
+     */
+    public static RuleData getRandomRuleExceptOneOnOne() {
+        CollectionOfRandRules rules = getInstance();
+        ArrayList<RandRule> filteredRules = new ArrayList<>();
+        for (RandRule rule : rules.randRuleList) {
+            if (!"ONE_ON_ONE".equals(rule.getName())) {
+                filteredRules.add(rule);
+            }
+        }
+        if (filteredRules.isEmpty()) {
+            // フォールバック（ありえないはず）
+            return getRandomRule();
+        }
+        int randomIndex = rules.random.nextInt(filteredRules.size());
+        return convertToRuleData(filteredRules.get(randomIndex));
+    }
+
+    /**
      * 全てのルールを取得（静的メソッド）
      */
     public static List<RuleData> getAllRules() {

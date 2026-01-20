@@ -405,7 +405,7 @@ export default function GamePage() {
       </div>
 
       {/* デバッグボタン */}
-      <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
+      {/* <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
         <button
           onClick={resetGame}
           className="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
@@ -419,7 +419,7 @@ export default function GamePage() {
         >
           Exit
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -162,8 +162,8 @@ public class GameEndpoint {
     private void startGame(GameState game) {
         System.out.println("ゲーム開始: roomId=" + game.roomId);
         
-        // ルール抽選
-        messages.ServerMessages.RuleData firstRule = CollectionOfRandRules.getRandomRule(); 
+        // ルール抽選（ゲーム開始時は複数プレイヤーなので ONE_ON_ONE 以外）
+        messages.ServerMessages.RuleData firstRule = CollectionOfRandRules.getRandomRuleExceptOneOnOne(); 
         game.currentRule = firstRule;
 
         // totalRounds を初期化 (maxRounds = Math.max(10, initialLife * 2 + Math.ceil(maxPlayers / 2)))
@@ -226,6 +226,7 @@ public class GameEndpoint {
             for (Map.Entry<String, Integer> e : game.playerLives.entrySet()) {
                 if (e.getValue() != null && e.getValue() > 0) aliveCount++;
             }
+            
             // 残存が2人なら必ず ONE_ON_ONE を適用
             if (aliveCount == 2) {
                 for (messages.ServerMessages.RuleData r : CollectionOfRandRules.getAllRules()) {
@@ -234,13 +235,11 @@ public class GameEndpoint {
                         break;
                     }
                 }
+            } else {
+                // 3人以上の場合は ONE_ON_ONE 以外をランダムに選択
+                newRule = CollectionOfRandRules.getRandomRuleExceptOneOnOne();
             }
-            // 上記で取得できなければ通常抽選。ただしONE_ON_ONEが出たら再抽選（生存人数が2を超える場合）
-            if (newRule == null) {
-                do {
-                    newRule = CollectionOfRandRules.getRandomRule();
-                } while (aliveCount > 2 && "ONE_ON_ONE".equals(newRule.id));
-            }
+            
             game.currentRule = newRule;
         }
 
