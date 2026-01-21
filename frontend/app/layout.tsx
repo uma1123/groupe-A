@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { RoomProvider } from "@/context/RoomContext";
 import { WebSocketProvider } from "@/context/WebSocketContext";
-import { WebSocketStatus } from "@/app/components/WebSocketStatus"; // ★ 追加
+//import { WebSocketStatus } from "@/app/components/WebSocketStatus"; // ★ 追加
 
 export const metadata: Metadata = {
   title: "Groupe A Game",
@@ -21,7 +21,7 @@ export default function RootLayout({
         <WebSocketProvider>
           <AuthProvider>
             <RoomProvider>
-              <WebSocketStatus />
+              {/* <WebSocketStatus /> */}
               {children}
             </RoomProvider>
           </AuthProvider>

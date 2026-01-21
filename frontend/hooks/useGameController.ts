@@ -124,7 +124,7 @@ export const useGameController = (roomId: string) => {
   );
 
   const beginRoundStart = useCallback(() => {
-    console.log("🎬 ラウンド開始演出を開始");
+    console.log(" ラウンド開始演出を開始");
     setShowRoundStart(true);
 
     if (roundStartTimeoutRef.current) {
@@ -132,13 +132,13 @@ export const useGameController = (roomId: string) => {
     }
 
     roundStartTimeoutRef.current = setTimeout(() => {
-      console.log("⏰ タイマー開始");
+      console.log(" タイマー開始");
       setShowRoundStart(false);
       setIsTimerRunning(true);
     }, 1500);
   }, []);
 
-  // ✅ タイマーカウントダウン
+  // タイマーカウントダウン
   useEffect(() => {
     if (isTimerRunning && timeRemaining > 0) {
       countdownRef.current = setInterval(() => {
@@ -162,17 +162,17 @@ export const useGameController = (roomId: string) => {
     };
   }, [isTimerRunning, timeRemaining, isSubmitted, submitNumber]);
 
-  // ★ WebSocket イベントハンドラ登録（サーバーからプレイヤー情報を取得）
+  //  WebSocket イベントハンドラ登録（サーバーからプレイヤー情報を取得）
   useEffect(() => {
     // ゲーム開始
     const offGameStart = gameWebSocket.on(
       "GAME_START",
       (data: GameStartResponse) => {
-        console.log("🎮 ゲーム開始:", data);
+        console.log(" ゲーム開始:", data);
 
-        // ★ サーバーからのプレイヤーリストを使用して初期化
+        //  サーバーからのプレイヤーリストを使用して初期化
         if (data.players && Array.isArray(data.players) && user) {
-          console.log("📥 サーバーからのプレイヤーリスト:", data.players);
+          console.log(" サーバーからのプレイヤーリスト:", data.players);
 
           const initializedPlayers = initializePlayersFromServer(
             data.players,
@@ -180,15 +180,16 @@ export const useGameController = (roomId: string) => {
             user,
           );
           setPlayers(initializedPlayers);
-          console.log("👥 プレイヤー初期化完了:", initializedPlayers);
+          console.log(" プレイヤー初期化完了:", initializedPlayers);
         } else {
-          console.warn("⚠️ プレイヤーリストが受信されていません:", data);
+          console.warn(" プレイヤーリストが受信されていません:", data);
         }
 
         setTotalRounds(data.totalRounds);
         setAvailableRules(data.availableRules || []);
         setCurrentRule(data.firstRule as GameRule);
         setRuleHistory([data.firstRule as GameRule]);
+        setCurrentRound(1); // ★ ゲーム開始時に currentRound を1に設定
         beginRoundStart();
       },
     );
@@ -197,7 +198,7 @@ export const useGameController = (roomId: string) => {
     const offRoundStart = gameWebSocket.on(
       "ROUND_START",
       (data: RoundStartResponse) => {
-        console.log("🎬 ラウンド開始:", data);
+        console.log(" ラウンド開始:", data);
         // サーバーが送る totalRounds をここでも反映する
         setTotalRounds(data.totalRounds);
         setCurrentRound(data.currentRound);
@@ -217,7 +218,7 @@ export const useGameController = (roomId: string) => {
     const offRoundResult = gameWebSocket.on(
       "ROUND_RESULT",
       (data: RoundResultResponse) => {
-        console.log("📊 ラウンド結果:", data);
+        console.log(" ラウンド結果:", data);
         setWaitingForOthers(false);
         setShowRoundResult(true);
         setGameResult(data.roundResult === "WIN" ? "WIN" : "LOSE");
@@ -249,9 +250,9 @@ export const useGameController = (roomId: string) => {
     const offAllPlayersResult = gameWebSocket.on(
       "ALL_PLAYERS_RESULT",
       (data: AllPlayersResultResponse) => {
-        console.log("📊 全員の結果:", data);
+        console.log(" 全員の結果:", data);
 
-        setAverage(data.average); // ★ 平均値を保存
+        setAverage(data.average); //  平均値を保存
         setTargetValue(data.targetValue);
 
         setPlayers((prev) =>
@@ -276,7 +277,7 @@ export const useGameController = (roomId: string) => {
     const offFinalResult = gameWebSocket.on(
       "FINAL_RESULT",
       (data: FinalResultResponse) => {
-        console.log("🏆 最終結果:", data);
+        console.log(" 最終結果:", data);
         setGameResult(data.isWinner ? "WIN" : "LOSE");
         setShowFinalResult(true);
       },
@@ -289,14 +290,14 @@ export const useGameController = (roomId: string) => {
       offAllPlayersResult();
       offFinalResult();
     };
-  }, [user, initialLife, beginRoundStart]);
+  }, [user, beginRoundStart]);
 
   const nextRound = useCallback(() => {
     const myPlayer = players.find((p) => p.isYou);
 
     // ケース1: 自分が死亡している
     if (myPlayer && myPlayer.lives <= 0) {
-      console.log("💀 ゲーム終了（ライフ0）");
+      console.log(" ゲーム終了（ライフ0）");
       setShowRoundResult(false);
       setGameResult("LOSE");
       setShowFinalResult(true);
@@ -305,7 +306,7 @@ export const useGameController = (roomId: string) => {
 
     // ケース2: 全ラウンド終了
     if (currentRound >= totalRounds) {
-      console.log("🏁 全ラウンド終了");
+      console.log(" 全ラウンド終了");
       setShowRoundResult(false);
       setGameResult("WIN");
       setShowFinalResult(true);
@@ -313,7 +314,7 @@ export const useGameController = (roomId: string) => {
     }
 
     // ケース3: 次のラウンドへ
-    console.log(`📍 ラウンド ${currentRound} → ${currentRound + 1}`);
+    console.log(` ラウンド ${currentRound} → ${currentRound + 1}`);
     const message: NextRoundMessage = {
       type: "NEXT_ROUND",
       userId: user!,
@@ -341,7 +342,7 @@ export const useGameController = (roomId: string) => {
     setShowFinalResult(false);
     setGameResult(null);
 
-    // ★ 空の状態にリセット（次のゲーム開始時に再初期化）
+    // 空の状態にリセット（次のゲーム開始時に再初期化）
     setPlayers(initializeEmptyPlayers(maxPlayers || 4));
 
     setTargetValue(DEFAULT_TARGET_VALUE);
@@ -369,7 +370,7 @@ export const useGameController = (roomId: string) => {
     showRoundResult,
     showFinalResult,
     gameResult,
-    average, // ★ 追加
+    average,
     submitNumber,
     nextRound,
     exitGame,

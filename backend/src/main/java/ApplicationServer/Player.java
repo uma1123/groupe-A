@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// プレイヤー情報を表すクラス
 public class Player {
     public String userid;
     public int life;

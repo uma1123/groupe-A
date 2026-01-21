@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// ルールメッセージ
 public class RuleMessage {
     int roomid;
     int playercount;

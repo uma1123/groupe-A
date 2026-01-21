@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// ラウンド結果メッセージ
 public class RoundResultMessage {
     public String type = "ROUND_RESULT";
     public String roomId;

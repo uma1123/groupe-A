@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// 最終結果メッセージ
 public class ResultMessage {
     int roomid;
     String userid;

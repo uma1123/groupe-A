@@ -15,7 +15,7 @@ export const useRoomController = () => {
   useEffect(() => {
     // 他のプレイヤーが参加した時
     const offPlayerJoined = gameWebSocket.on("PLAYER_JOINED", (data) => {
-      console.log("👤 プレイヤー参加:", data);
+      console.log(" プレイヤー参加:", data);
       if (data.newUser) {
         addPlayer(data.newUser);
       }
@@ -23,7 +23,7 @@ export const useRoomController = () => {
 
     // プレイヤーが退出した時
     const offPlayerLeft = gameWebSocket.on("PLAYER_LEFT", (data) => {
-      console.log("👤 プレイヤー退出:", data);
+      console.log(" プレイヤー退出:", data);
       if (data.userId) {
         removePlayer(data.userId);
       }
@@ -33,18 +33,18 @@ export const useRoomController = () => {
     const offGoToGame = gameWebSocket.on("GO_TO_GAME_SERVER", (data) => {
       // 重複実行防止
       if (isTransitioning.current) {
-        console.log("⚠️ 既に遷移中です");
+        console.log(" 既に遷移中です");
         return;
       }
       isTransitioning.current = true;
 
-      console.log("🎮 ゲームサーバへ移動:", data);
+      console.log("ゲームサーバへ移動:", data);
       setIsLoading(true);
 
       const roomId = data.roomId;
       const gameUrl = `${data.nextEndpoint}&userId=${user}`;
 
-      console.log("🔗 接続先:", gameUrl);
+      console.log(" 接続先:", gameUrl);
 
       // ゲームサーバに接続
       gameWebSocket.connectToGameServer(gameUrl);
@@ -60,7 +60,7 @@ export const useRoomController = () => {
           clearInterval(checkConnection);
 
           // ゲーム画面へ遷移してから JOIN_GAME を送信する（ホストが開始メッセージを逃さないように）
-          console.log("🚀 ゲーム画面へ遷移（先）:", `/game/${roomId}`);
+          console.log(" ゲーム画面へ遷移（先）:", `/game/${roomId}`);
           router.push(`/game/${roomId}`);
 
           // 少し待ってから JOIN_GAME を送信（ページ遷移後にハンドラが登録される想定）
@@ -78,7 +78,7 @@ export const useRoomController = () => {
         if (attempts >= maxAttempts) {
           clearInterval(checkConnection);
           if (!gameWebSocket.isGameServerConnected()) {
-            console.error("❌ ゲームサーバへの接続タイムアウト");
+            console.error(" ゲームサーバへの接続タイムアウト");
             setError("ゲームサーバへの接続に失敗しました");
             setIsLoading(false);
             isTransitioning.current = false;
@@ -98,7 +98,7 @@ export const useRoomController = () => {
     (roomId: string) => {
       // 重複実行防止
       if (isLoading || isTransitioning.current) {
-        console.log("⚠️ 既にゲーム開始処理中です");
+        console.log(" 既にゲーム開始処理中です");
         return;
       }
 
@@ -116,7 +116,7 @@ export const useRoomController = () => {
         userId: user!,
         roomId: roomId,
       });
-      console.log("📤 START_GAME 送信:", { userId: user, roomId });
+      console.log(" START_GAME 送信:", { userId: user, roomId });
     },
     [user, isLoading],
   );

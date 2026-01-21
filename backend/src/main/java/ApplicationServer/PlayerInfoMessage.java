@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// プレイヤー情報メッセージ
 public class PlayerInfoMessage {
     int roomid;
     String userid;

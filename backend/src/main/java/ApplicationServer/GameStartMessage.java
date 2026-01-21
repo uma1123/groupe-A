@@ -1,5 +1,6 @@
 package ApplicationServer;
 
+// ゲーム開始メッセージ
 public class GameStartMessage {
     int roomid;
 

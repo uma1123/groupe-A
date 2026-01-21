@@ -23,7 +23,7 @@ export const useLobbyController = () => {
     const offCreate = gameWebSocket.on(
       "CREATE_ROOM_SUCCESS",
       (data: CreateRoomSuccessResponse) => {
-        console.log("✅ ルーム作成成功 (global handler):", data);
+        console.log(" ルーム作成成功 (global handler):", data);
         setIsLoading(false);
 
         const maxPlayers = data.maxPlayers;
@@ -40,12 +40,12 @@ export const useLobbyController = () => {
     const offJoin = gameWebSocket.on(
       "JOIN_ROOM_SUCCESS",
       (data: JoinRoomSuccessResponse) => {
-        console.log("✅ ルーム参加成功 (global handler):", data);
+        console.log(" ルーム参加成功 (global handler):", data);
         setIsLoading(false);
 
         if (data.maxPlayers && data.lives) {
           setRoomSettings(data.maxPlayers, data.lives);
-          console.log("📋 ルーム設定を適用:", {
+          console.log(" ルーム設定を適用:", {
             maxPlayers: data.maxPlayers,
             lives: data.lives,
           });
@@ -62,7 +62,7 @@ export const useLobbyController = () => {
     );
 
     const offError = gameWebSocket.on("ERROR", (data: ErrorResponse) => {
-      console.error("❌ エラー:", data);
+      console.error(" エラー:", data);
       setError(data.message);
       setIsLoading(false);
     });

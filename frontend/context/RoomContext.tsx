@@ -14,6 +14,7 @@ type RoomContextType = {
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
 
+// コンテキストプロバイダー
 export function RoomProvider({ children }: { children: ReactNode }) {
   const [maxPlayers, setMaxPlayers] = useState(9);
   const [initialLife, setInitialLife] = useState(3);

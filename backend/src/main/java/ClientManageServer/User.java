@@ -1,5 +1,6 @@
 package ClientManageServer;
 
+// ユーザークラス
 public class User {
 
     private final String userId;

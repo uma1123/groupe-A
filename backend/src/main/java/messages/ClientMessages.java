@@ -2,7 +2,6 @@ package messages;
 
 /**
  * クライアント → サーバ へのメッセージ型定義
- * フロントエンドの types/websocket.ts と対応
  */
 public class ClientMessages {
 
@@ -57,7 +56,7 @@ public class ClientMessages {
         public String roomId;
     }
 
-    // ログアウト（追加）
+    // ログアウト
     public static class LogoutMessage {
         public String type;
         public String userId;

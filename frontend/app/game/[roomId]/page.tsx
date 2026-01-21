@@ -8,13 +8,13 @@ import { PlayerCard } from "@/app/components/PlayerCard";
 import { ResultOverlay } from "@/app/components/ResultOverlay";
 import { useGameController } from "@/hooks/useGameController";
 
-// --- 2. メインページコンポーネント ---
+// ゲームページ
 export default function GamePage() {
   const params = useParams();
   const roomId = (params?.roomId as string) || "";
   const { user } = useAuth();
 
-  // ★ useGameController を呼び出す
+  // useGameController を呼び出す
   const {
     submitNumber,
     nextRound,
@@ -40,7 +40,7 @@ export default function GamePage() {
   const [selectedNumber, setSelectedNumber] = useState("");
   const alivePlayers = players.filter((p) => p.status === "alive").length;
 
-  // 表示用の並び替え: YOU を常に先頭にする
+  // 表示用の並び替え: YOU（自分） を常に先頭にする
   const orderedPlayers = useMemo(() => {
     const visible = players.slice();
     const youIdx = visible.findIndex((p) => p.isYou);
@@ -250,7 +250,7 @@ export default function GamePage() {
                 参加者
               </h2>
               <div className="space-y-3">
-                {/* ★ 実際のプレイヤー（status !== "empty"）が存在する場合のみ表示 */}
+                {/*  実際のプレイヤー（status !== "empty"）が存在する場合のみ表示 */}
                 {players.filter((p) => p.status !== "empty").length > 0 ? (
                   <>
                     <div className="grid grid-cols-5 gap-3">
@@ -405,7 +405,7 @@ export default function GamePage() {
       </div>
 
       {/* デバッグボタン */}
-      <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
+      {/* <div className="fixed bottom-4 right-4 z-40 flex gap-2 flex-col">
         <button
           onClick={resetGame}
           className="bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded text-xs font-bold flex items-center gap-1"
@@ -419,7 +419,7 @@ export default function GamePage() {
         >
           Exit
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }

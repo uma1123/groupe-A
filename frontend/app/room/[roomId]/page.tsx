@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRoomContext } from "@/context/RoomContext";
 import { useRoomController } from "@/hooks/useRoomController";
@@ -22,11 +21,8 @@ export default function RoomPage() {
   const params = useParams();
   const roomId = (params?.roomId as string) || "";
 
-  // ★ useRoomController を呼び出してイベントハンドラを登録
+  //  useRoomController を呼び出してイベントハンドラを登録
   const { isLoading, error, startGame, leaveRoom } = useRoomController();
-
-  // ★ isCreatingGame を削除し、isLoading を使用
-  // const [isCreatingGame, setIsCreatingGame] = useState(false);
 
   const isRuleLocked = true;
 

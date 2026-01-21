@@ -4,8 +4,10 @@ import { User, Heart } from "lucide-react";
 import type { Player } from "@/types/game";
 import { useRoomContext } from "@/context/RoomContext";
 
+// プレイヤーカードコンポーネント(ゲーム中)
 export const PlayerCard = ({ player }: { player: Player }) => {
-  const { initialLife } = useRoomContext();
+  const { initialLife } = useRoomContext(); // コンテキストから初期ライフを取得
+  // スタイル定義
   const baseStyle =
     "relative aspect-square rounded-lg border transition-all overflow-hidden";
   const statusStyles = {
@@ -58,7 +60,7 @@ export const PlayerCard = ({ player }: { player: Player }) => {
                 ))}
               </div>
             </div>
-            {/* ペナルティ表示（あれば右上に小さなバッジ） */}
+            {/* ペナルティ表示 */}
             {player.penalty && player.penalty > 0 && (
               <div className="absolute top-2 right-2 z-20">
                 <div className="text-xs bg-red-700/90 text-white px-2 py-0.5 rounded font-bold">

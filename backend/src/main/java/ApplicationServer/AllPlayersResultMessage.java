@@ -2,6 +2,7 @@ package ApplicationServer;
 
 import java.util.List;
 
+// 全プレイヤーのリザルト
 public class AllPlayersResultMessage {
     public String type = "ALL_PLAYERS_RESULT";
     public String roomId;
@@ -26,7 +27,7 @@ public class AllPlayersResultMessage {
         public String result; // "WIN" | "LOSE" | "DRAW"
         public int lives;
         public boolean isDead;
-        public int penalty; // 追加: このラウンドで受けたペナルティ量
+        public int penalty; // ルール違反で受けたペナルティ量
 
         public PlayerResultInfo(String userId, int number, String result,
                                 int lives, boolean isDead, int penalty) {
